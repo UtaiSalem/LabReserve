@@ -874,15 +874,27 @@
       font-weight: 900;
     }
 
-    .notification-item.staff {
-      border-left-color: var(--accent);
+    .notification-item.staff { border-left-color: var(--accent); }
+    .notification-item.staff::before { content: "✓"; background: var(--accent-soft); color: var(--accent); }
+    .notification-item.severity-warning { border-left-color: #d97706; }
+    .notification-item.severity-warning::before { content: "!"; background: #fef3c7; color: #b45309; }
+    .notification-item.severity-critical { border-left-color: #dc2626; background: #fef2f2; }
+    .notification-item.severity-critical::before { content: "✕"; background: #fee2e2; color: #991b1b; }
+    .notification-item.unread { box-shadow: 0 0 0 2px rgba(15,118,110,0.12); }
+    .notification-item.unread strong::after {
+      content: "ใหม่"; margin-left: 8px; background: var(--primary); color: white;
+      font-size: 10px; padding: 1px 6px; border-radius: 999px; vertical-align: middle;
     }
-
-    .notification-item.staff::before {
-      content: "✓";
-      background: var(--accent-soft);
-      color: var(--accent);
+    .notification-item.clickable { cursor: pointer; }
+    .notification-item.clickable:hover { transform: translateY(-1px); }
+    .notification-filters {
+      display: flex; gap: 6px; padding: 0 0 10px 0; flex-wrap: wrap;
     }
+    .notification-filters button {
+      background: transparent; border: 1px solid var(--line); padding: 4px 10px;
+      border-radius: 999px; cursor: pointer; font-size: 12px;
+    }
+    .notification-filters button.active { background: var(--primary); color: white; border-color: var(--primary); }
 
     .notification-item strong {
       font-size: 14px;
@@ -1214,6 +1226,23 @@
         padding: 10px 6px;
       }
     }
+    .password-field { position: relative; }
+    .password-field input { width: 100%; padding-right: 56px; box-sizing: border-box; }
+    .password-toggle {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: 1px solid rgba(15,23,42,0.15);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12px;
+      color: #0f766e;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .password-toggle:hover { background: rgba(15,118,110,0.08); }
   </style>
 </head>
 <body>
@@ -1324,9 +1353,17 @@
           <section class="panel">
             <div class="panel-header">
               <h3>ข้อความล่าสุด</h3>
-              <button class="btn secondary" type="button" id="clearNotifications">ล้างแจ้งเตือน</button>
+              <div style="display:flex; gap:6px;">
+                <button class="btn secondary" type="button" id="markAllRead">อ่านทั้งหมด</button>
+                <button class="btn secondary" type="button" id="clearNotifications">ล้างแจ้งเตือน</button>
+              </div>
             </div>
             <div class="panel-body">
+              <div class="notification-filters" id="notificationFilters">
+                <button type="button" data-filter="all" class="active">ทั้งหมด</button>
+                <button type="button" data-filter="unread">ยังไม่อ่าน</button>
+                <button type="button" data-filter="critical">สำคัญ</button>
+              </div>
               <div class="notification-list" id="notificationList"></div>
             </div>
           </section>
@@ -1356,11 +1393,45 @@
                 </label>
                 <label>
                   รหัสผ่านใหม่
-                  <input id="newPassword" type="password" minlength="8" required placeholder="อย่างน้อย 8 ตัวอักษร">
+                  <span class="password-field">
+                    <input id="newPassword" type="password" minlength="8" required placeholder="อย่างน้อย 8 ตัวอักษร">
+                    <button type="button" class="password-toggle" data-toggle-password="newPassword" aria-label="แสดงรหัสผ่าน">แสดง</button>
+                  </span>
                 </label>
                 <button class="btn" type="submit">เปลี่ยนรหัส</button>
               </form>
               <div class="alert" id="passwordAlert"></div>
+
+              <h4 style="margin-top:24px">ข้อมูลผู้ใช้ (ชื่อ / อีเมล / หน่วยงาน)</h4>
+              <form class="password-form" id="profileForm">
+                <label>ผู้ใช้
+                  <select id="profileUser"></select>
+                </label>
+                <label>ชื่อ-สกุล
+                  <input id="profileName" placeholder="ชื่อจริง นามสกุล">
+                </label>
+                <label>อีเมล
+                  <input id="profileEmail" type="email" placeholder="user@example.com">
+                </label>
+                <label>หน่วยงาน
+                  <input id="profileDepartment" placeholder="เช่น เคมีวิเคราะห์">
+                </label>
+                <button class="btn" type="submit">บันทึก</button>
+              </form>
+              <div class="alert" id="profileAlert"></div>
+
+              <h4 style="margin-top:24px">ผูกเครื่องมือกับผู้อนุมัติ</h4>
+              <form class="password-form" id="toolApproverForm">
+                <label>เครื่องมือ
+                  <select id="taTool"></select>
+                </label>
+                <label>ผู้อนุมัติ
+                  <select id="taApprover"></select>
+                </label>
+                <button class="btn" type="submit">เพิ่ม</button>
+              </form>
+              <div class="user-list" id="toolApproverList" style="margin-top:12px"></div>
+              <div class="alert" id="toolApproverAlert"></div>
             </div>
           </section>
 
@@ -1469,32 +1540,63 @@
   <div class="toast-stack" id="toastStack" aria-live="polite"></div>
 
   <div class="login-overlay" id="loginOverlay">
-    <form class="login-card" id="loginForm">
+    <div class="login-card">
       <div class="brand">
         <div class="brand-mark">LR</div>
         <div>
-          <h3>เข้าสู่ระบบ LabReserve</h3>
-          <p>ต้องเข้าสู่ระบบก่อนใช้งานจริง เพื่อควบคุมสิทธิ์การจอง อนุมัติ และจัดการคิวเจ้าหน้าที่</p>
+          <h3>LabReserve</h3>
+          <p>เข้าสู่ระบบหรือสมัครสมาชิกเพื่อใช้งาน</p>
         </div>
       </div>
-      <label>
-        ชื่อผู้ใช้
-        <input id="loginUsername" autocomplete="username" required placeholder="เช่น admin">
-      </label>
-      <label>
-        รหัสผ่าน
-        <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="กรอกรหัสผ่าน">
-      </label>
-      <button class="btn" type="submit">เข้าสู่ระบบ</button>
-      <div class="alert" id="loginAlert"></div>
-      <div class="login-help">
-        <strong>บัญชีเริ่มต้นสำหรับทดสอบ</strong>
-        <span>admin / admin1234</span>
-        <span>approver / approve1234</span>
-        <span>staff / staff1234</span>
-        <span>requester / request1234</span>
+      <div class="notification-filters" style="margin-bottom:8px">
+        <button type="button" data-auth-tab="login" class="active">เข้าสู่ระบบ</button>
+        <button type="button" data-auth-tab="register">สมัครสมาชิก</button>
       </div>
-    </form>
+      <form id="loginForm" data-auth-panel="login">
+        <label>
+          ชื่อผู้ใช้
+          <input id="loginUsername" autocomplete="username" required placeholder="เช่น admin">
+        </label>
+        <label>
+          รหัสผ่าน
+          <span class="password-field">
+            <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="กรอกรหัสผ่าน">
+            <button type="button" class="password-toggle" data-toggle-password="loginPassword" aria-label="แสดงรหัสผ่าน">แสดง</button>
+          </span>
+        </label>
+        <button class="btn" type="submit">เข้าสู่ระบบ</button>
+        <div class="alert" id="loginAlert"></div>
+        <div class="login-help">
+          <strong>บัญชีเริ่มต้นสำหรับทดสอบ</strong>
+          <span>admin / admin1234</span>
+          <span>approver / approve1234</span>
+          <span>staff / staff1234</span>
+          <span>requester / request1234</span>
+        </div>
+      </form>
+      <form id="registerForm" data-auth-panel="register" style="display:none">
+        <label>ชื่อผู้ใช้ (3-32 ตัวอักษร ไม่มีเว้นวรรค)
+          <input id="regUsername" required pattern="[a-zA-Z0-9_.\-]{3,32}" placeholder="เช่น somchai.s">
+        </label>
+        <label>ชื่อ-สกุล
+          <input id="regName" required placeholder="ชื่อจริง นามสกุล">
+        </label>
+        <label>อีเมล
+          <input id="regEmail" type="email" required placeholder="you@example.com">
+        </label>
+        <label>หน่วยงาน
+          <input id="regDepartment" placeholder="เช่น เคมีวิเคราะห์">
+        </label>
+        <label>รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)
+          <span class="password-field">
+            <input id="regPassword" type="password" minlength="8" required placeholder="อย่างน้อย 8 ตัวอักษร">
+            <button type="button" class="password-toggle" data-toggle-password="regPassword">แสดง</button>
+          </span>
+        </label>
+        <button class="btn" type="submit">สมัครสมาชิก</button>
+        <div class="alert" id="registerAlert"></div>
+      </form>
+    </div>
   </div>
 
   <script>
@@ -1669,6 +1771,20 @@
       return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
     }
 
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function statusClass(status) {
+      return ["pending", "approved", "rejected"].includes(status) ? status : "pending";
+    }
+
     function filteredBookings() {
       const tool = els.calendarTool.value;
       const filter = els.statusFilter.value;
@@ -1748,16 +1864,17 @@
       sorted.forEach((booking) => {
         const item = document.createElement("article");
         item.className = "request";
+        item.dataset.bookingId = booking.id;
         item.innerHTML = `
           <div class="request-head">
             <div>
-              <h4>${booking.tool}</h4>
-              <p>${booking.requester} · ${booking.department}</p>
+              <h4>${escapeHtml(booking.tool)}</h4>
+              <p>${escapeHtml(booking.requester)} · ${escapeHtml(booking.department)}</p>
             </div>
-            <span class="badge ${booking.status}">${statusText[booking.status]}</span>
+            <span class="badge ${statusClass(booking.status)}">${escapeHtml(statusText[booking.status] || "รอตรวจสอบ")}</span>
           </div>
-          <p>${formatDateTime(booking.start)} ถึง ${formatDateTime(booking.end)}</p>
-          <p>${booking.purpose}</p>
+          <p>${escapeHtml(formatDateTime(booking.start))} ถึง ${escapeHtml(formatDateTime(booking.end))}</p>
+          <p>${escapeHtml(booking.purpose)}</p>
         `;
 
         if (booking.status === "pending") {
@@ -1785,7 +1902,20 @@
     }
 
     function audienceLabel(audience) {
-      return audience === "staff" ? "เจ้าหน้าที่" : "ผู้มีสิทธิอนุมัติ";
+      return {
+        staff: "เจ้าหน้าที่",
+        approver: "ผู้มีสิทธิอนุมัติ",
+        admin: "ผู้ดูแลระบบ",
+        requester: "ผู้จอง"
+      }[audience] || "ผู้ใช้งาน";
+    }
+
+    let notificationFilter = "all";
+
+    function filteredNotifications() {
+      if (notificationFilter === "unread") return state.notifications.filter((n) => !n.read);
+      if (notificationFilter === "critical") return state.notifications.filter((n) => n.severity === "critical" || n.severity === "warning");
+      return state.notifications;
     }
 
     function renderNotifications() {
@@ -1794,27 +1924,50 @@
       els.notificationBadge.style.display = unread ? "inline-grid" : "none";
       els.notificationList.innerHTML = "";
 
-      if (!state.notifications.length) {
+      const items = filteredNotifications();
+      if (!items.length) {
         els.notificationList.innerHTML = '<div class="empty">ยังไม่มีข้อความแจ้งเตือน</div>';
         return;
       }
 
-      state.notifications.slice(0, 6).forEach((notice) => {
+      items.slice(0, 12).forEach((notice) => {
         const item = document.createElement("article");
-        item.className = `notification-item ${notice.audience}`;
+        const classes = ["notification-item"];
+        if (notice.audience) classes.push(notice.audience);
+        if (notice.severity && notice.severity !== "info") classes.push(`severity-${notice.severity}`);
+        if (!notice.read) classes.push("unread");
+        if (notice.related_id) classes.push("clickable");
+        item.className = classes.join(" ");
+        const audienceText = notice.recipient_user ? `ส่งถึง ${notice.recipient_user}` : audienceLabel(notice.audience);
         item.innerHTML = `
-          <strong>${notice.title}</strong>
-          <span>${audienceLabel(notice.audience)} · ${notice.time}</span>
-          <span>${notice.message}</span>
+          <strong>${escapeHtml(notice.title)}</strong>
+          <span>${escapeHtml(audienceText)} · ${escapeHtml(notice.time)}</span>
+          <span>${escapeHtml(notice.message)}</span>
         `;
+        item.addEventListener("click", () => onNotificationClick(notice));
         els.notificationList.appendChild(item);
       });
+    }
+
+    async function onNotificationClick(notice) {
+      if (!notice.read && apiMode) {
+        try {
+          await apiRequest(`/api/notifications/${encodeURIComponent(notice.id)}/read`, { method: "PATCH" });
+          notice.read = true;
+          renderNotifications();
+        } catch {}
+      }
+      if (notice.related_type === "booking" && notice.related_id) {
+        const target = document.querySelector(`[data-booking-id="${notice.related_id}"]`)
+          || document.querySelector("#approval");
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
     }
 
     function showToast(title, message) {
       const toast = document.createElement("div");
       toast.className = "toast";
-      toast.innerHTML = `<strong>${title}</strong><span>${message}</span>`;
+      toast.innerHTML = `<strong>${escapeHtml(title)}</strong><span>${escapeHtml(message)}</span>`;
       els.toastStack.appendChild(toast);
       setTimeout(() => toast.remove(), 4200);
     }
@@ -1832,13 +1985,24 @@
       renderNotifications();
     }
 
-    const API_BASE = location.port === "8775" ? "" : "http://127.0.0.1:8775";
+    const API_BASE = location.protocol === "file:" ? "http://127.0.0.1:8775" : "";
     const apiMode = location.protocol === "http:" || location.protocol === "https:" || location.protocol === "file:";
+
+    function readCookie(name) {
+      const match = document.cookie.split("; ").find((row) => row.startsWith(`${name}=`));
+      return match ? decodeURIComponent(match.split("=").slice(1).join("=")) : "";
+    }
 
     async function apiRequest(path, options = {}) {
       if (!apiMode) throw new Error("API server is not available from file mode");
+      const method = (options.method || "GET").toUpperCase();
+      const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+      if (["POST", "PATCH", "DELETE"].includes(method)) {
+        const csrf = readCookie("labreserve_csrf");
+        if (csrf) headers["X-CSRF-Token"] = csrf;
+      }
       const response = await fetch(`${API_BASE}${path}`, {
-        headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+        headers,
         credentials: "include",
         ...options
       });
@@ -1895,10 +2059,10 @@
         item.className = "user-row";
         item.innerHTML = `
           <div class="row-top">
-            <strong>${user.name}</strong>
-            <span class="badge approved">${roleText(user.role)}</span>
+            <strong>${escapeHtml(user.name)}</strong>
+            <span class="badge approved">${escapeHtml(roleText(user.role))}</span>
           </div>
-          <span>Username: ${user.username}</span>
+          <span>Username: ${escapeHtml(user.username)}</span>
         `;
         els.userList.appendChild(item);
 
@@ -1915,6 +2079,8 @@
         const result = await apiRequest("/api/users");
         users = result.users || [];
         renderUsers();
+        if (typeof fillProfileForm === "function") fillProfileForm();
+        if (typeof loadToolApprovers === "function") loadToolApprovers();
       } catch (error) {
         users = [];
         renderUsers();
@@ -1978,8 +2144,8 @@
         const item = document.createElement("article");
         item.className = "channel-card";
         item.innerHTML = `
-          <strong>${channelLabels[channel]}</strong>
-          <span>เปิดใช้กับ ${count} เครื่องมือ</span>
+          <strong>${escapeHtml(channelLabels[channel])}</strong>
+          <span>เปิดใช้กับ ${escapeHtml(count)} เครื่องมือ</span>
           <button class="channel-toggle" type="button">${count ? "Active" : "Off"}</button>
         `;
         els.channelGrid.appendChild(item);
@@ -1992,11 +2158,11 @@
         item.className = "permission-row";
         item.innerHTML = `
           <div class="row-top">
-            <strong>${tool}</strong>
-            <span class="badge approved">${channelSummary(tool)}</span>
+            <strong>${escapeHtml(tool)}</strong>
+            <span class="badge approved">${escapeHtml(channelSummary(tool))}</span>
           </div>
-          <span>ผู้อนุมัติ: ${config.approver}</span>
-          <span>เจ้าหน้าที่: ${config.staff}</span>
+          <span>ผู้อนุมัติ: ${escapeHtml(config.approver)}</span>
+          <span>เจ้าหน้าที่: ${escapeHtml(config.staff)}</span>
         `;
         els.permissionList.appendChild(item);
       });
@@ -2018,11 +2184,11 @@
         item.className = "staff-row";
         item.innerHTML = `
           <div class="row-top">
-            <strong>${booking.tool}</strong>
-            <span class="badge ${booking.staffStatus === "issue" ? "rejected" : booking.staffStatus === "waiting" ? "pending" : "approved"}">${staffStatusText(booking.staffStatus)}</span>
+            <strong>${escapeHtml(booking.tool)}</strong>
+            <span class="badge ${booking.staffStatus === "issue" ? "rejected" : booking.staffStatus === "waiting" ? "pending" : "approved"}">${escapeHtml(staffStatusText(booking.staffStatus))}</span>
           </div>
-          <span>${booking.requester} · ${formatDateTime(booking.start)} ถึง ${formatDateTime(booking.end)}</span>
-          <span>รับผิดชอบ: ${toolConfig[booking.tool]?.staff || "เจ้าหน้าที่"}</span>
+          <span>${escapeHtml(booking.requester)} · ${escapeHtml(formatDateTime(booking.start))} ถึง ${escapeHtml(formatDateTime(booking.end))}</span>
+          <span>รับผิดชอบ: ${escapeHtml(toolConfig[booking.tool]?.staff || "เจ้าหน้าที่")}</span>
         `;
 
         const actions = document.createElement("div");
@@ -2073,7 +2239,7 @@
     }
 
     function updateMetrics() {
-      const today = new Date(2026, 5, 4);
+      const today = new Date();
       els.toolCount.textContent = tools.length;
       els.pendingCount.textContent = state.bookings.filter((item) => item.status === "pending").length;
       els.approvedCount.textContent = state.bookings.filter((item) => item.status === "approved").length;
@@ -2371,6 +2537,146 @@
       renderAll();
     });
 
+    document.querySelectorAll("[data-auth-tab]").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const which = tab.dataset.authTab;
+        document.querySelectorAll("[data-auth-tab]").forEach((t) => t.classList.toggle("active", t === tab));
+        document.querySelectorAll("[data-auth-panel]").forEach((p) => {
+          p.style.display = p.dataset.authPanel === which ? "" : "none";
+        });
+      });
+    });
+
+    const registerForm = document.querySelector("#registerForm");
+    const registerAlert = document.querySelector("#registerAlert");
+    registerForm?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      registerAlert.classList.remove("show");
+      try {
+        const result = await apiRequest("/api/register", {
+          method: "POST",
+          body: JSON.stringify({
+            username: document.querySelector("#regUsername").value.trim(),
+            name: document.querySelector("#regName").value.trim(),
+            email: document.querySelector("#regEmail").value.trim(),
+            department: document.querySelector("#regDepartment").value.trim(),
+            password: document.querySelector("#regPassword").value
+          })
+        });
+        registerForm.reset();
+        setAuthUser(result.user);
+        await loadServerData();
+        showToast("สมัครสมาชิกสำเร็จ", `ยินดีต้อนรับ ${result.user.name}`);
+      } catch (error) {
+        registerAlert.textContent = error.payload?.error || error.message || "สมัครไม่สำเร็จ";
+        registerAlert.classList.add("show");
+      }
+    });
+
+    let toolApprovers = [];
+
+    function renderToolApprovers() {
+      const list = document.querySelector("#toolApproverList");
+      const taTool = document.querySelector("#taTool");
+      const taApprover = document.querySelector("#taApprover");
+      taTool.innerHTML = tools.map((t) => `<option value="${t}">${t}</option>`).join("");
+      const approverUsers = users.filter((u) => u.role === "approver" || u.role === "admin");
+      taApprover.innerHTML = approverUsers.map((u) => `<option value="${u.username}">${u.name} (${u.username})</option>`).join("");
+      if (!toolApprovers.length) {
+        list.innerHTML = '<div class="empty">ยังไม่มีการผูกผู้อนุมัติกับเครื่องมือ</div>';
+        return;
+      }
+      const byTool = {};
+      toolApprovers.forEach((row) => { (byTool[row.tool] = byTool[row.tool] || []).push(row); });
+      list.innerHTML = Object.entries(byTool).map(([tool, rows]) => `
+        <article class="user-row">
+          <div class="row-top"><strong>${escapeHtml(tool)}</strong></div>
+          ${rows.map((r) => `
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0">
+              <span>${escapeHtml(r.name)} <span style="color:#64748b">&lt;${escapeHtml(r.email || "ไม่มีอีเมล")}&gt;</span></span>
+              <button type="button" class="btn secondary" data-remove-tool="${escapeHtml(tool)}" data-remove-user="${escapeHtml(r.approver_username)}" style="padding:4px 10px;font-size:12px">ลบ</button>
+            </div>
+          `).join("")}
+        </article>
+      `).join("");
+      list.querySelectorAll("[data-remove-tool]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          try {
+            const result = await apiRequest("/api/tool-approvers", {
+              method: "DELETE",
+              body: JSON.stringify({ tool: btn.dataset.removeTool, approver_username: btn.dataset.removeUser })
+            });
+            toolApprovers = result.entries || [];
+            renderToolApprovers();
+          } catch (error) { showToast("ลบไม่สำเร็จ", error.message); }
+        });
+      });
+    }
+
+    async function loadToolApprovers() {
+      if (!apiMode || currentUser?.role !== "admin") return;
+      try {
+        const result = await apiRequest("/api/tool-approvers");
+        toolApprovers = result.entries || [];
+        renderToolApprovers();
+      } catch {}
+    }
+
+    document.querySelector("#toolApproverForm")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      try {
+        const result = await apiRequest("/api/tool-approvers", {
+          method: "POST",
+          body: JSON.stringify({
+            tool: document.querySelector("#taTool").value,
+            approver_username: document.querySelector("#taApprover").value
+          })
+        });
+        toolApprovers = result.entries || [];
+        renderToolApprovers();
+        showToast("ผูกแล้ว", "เพิ่มผู้อนุมัติให้เครื่องมือสำเร็จ");
+      } catch (error) {
+        document.querySelector("#toolApproverAlert").textContent = error.message;
+        document.querySelector("#toolApproverAlert").classList.add("show");
+      }
+    });
+
+    function fillProfileForm() {
+      const sel = document.querySelector("#profileUser");
+      sel.innerHTML = users.map((u) => `<option value="${u.username}">${u.username} (${u.name})</option>`).join("");
+      onProfileUserChange();
+    }
+    function onProfileUserChange() {
+      const username = document.querySelector("#profileUser").value;
+      const u = users.find((x) => x.username === username) || {};
+      document.querySelector("#profileName").value = u.name || "";
+      document.querySelector("#profileEmail").value = u.email || "";
+      document.querySelector("#profileDepartment").value = u.department || "";
+    }
+    document.querySelector("#profileUser")?.addEventListener("change", onProfileUserChange);
+    document.querySelector("#profileForm")?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const username = document.querySelector("#profileUser").value;
+      try {
+        const result = await apiRequest(`/api/users/${encodeURIComponent(username)}/profile`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            name: document.querySelector("#profileName").value.trim(),
+            email: document.querySelector("#profileEmail").value.trim(),
+            department: document.querySelector("#profileDepartment").value.trim()
+          })
+        });
+        users = result.users || users;
+        renderUsers();
+        fillProfileForm();
+        renderToolApprovers();
+        showToast("บันทึกแล้ว", `อัปเดตข้อมูล ${username} สำเร็จ`);
+      } catch (error) {
+        document.querySelector("#profileAlert").textContent = error.payload?.error || error.message;
+        document.querySelector("#profileAlert").classList.add("show");
+      }
+    });
+
     els.loginForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       els.loginAlert.classList.remove("show");
@@ -2438,6 +2744,39 @@
       document.querySelector("#startTime").value = "09:00";
       document.querySelector("#endTime").value = "10:00";
     }
+
+    document.querySelectorAll("#notificationFilters button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        notificationFilter = btn.dataset.filter;
+        document.querySelectorAll("#notificationFilters button").forEach((b) => b.classList.toggle("active", b === btn));
+        renderNotifications();
+      });
+    });
+
+    document.querySelector("#markAllRead")?.addEventListener("click", async () => {
+      if (!apiMode) {
+        state.notifications.forEach((n) => { n.read = true; });
+        renderNotifications();
+        return;
+      }
+      try {
+        const result = await apiRequest("/api/notifications/read-all", { method: "POST" });
+        applyServerData(result.data);
+      } catch (error) {
+        showToast("อัปเดตไม่สำเร็จ", error.message);
+      }
+    });
+
+    document.querySelectorAll("[data-toggle-password]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const input = document.getElementById(btn.dataset.togglePassword);
+        if (!input) return;
+        const showing = input.type === "text";
+        input.type = showing ? "password" : "text";
+        btn.textContent = showing ? "แสดง" : "ซ่อน";
+        btn.setAttribute("aria-label", showing ? "แสดงรหัสผ่าน" : "ซ่อนรหัสผ่าน");
+      });
+    });
 
     setupOptions();
     setDefaultDates();

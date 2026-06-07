@@ -1,0 +1,20 @@
+services:
+  labreserve:
+    build: .
+    image: labreserve:latest
+    ports:
+      - "8775:8775"
+    environment:
+      NODE_ENV: production
+      PORT: "8775"
+      HOST: 0.0.0.0
+      DATA_DIR: /data
+      SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET before starting}
+      APP_ORIGIN: ${APP_ORIGIN:-http://localhost:8775}
+      SECURE_COOKIES: ${SECURE_COOKIES:-false}
+    volumes:
+      - labreserve-data:/data
+    restart: unless-stopped
+
+volumes:
+  labreserve-data:

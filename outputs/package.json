@@ -1,14 +1,19 @@
 {
   "name": "labreserve",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Scientific instrument booking and approval system",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "check": "node -c server.js"
+    "check": "node -c server.js && node -c db.js",
+    "test": "node --test tests/*.test.js"
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "nodemailer": "^6.9.16"
   },
   "license": "UNLICENSED"
 }
