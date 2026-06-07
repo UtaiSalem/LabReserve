@@ -1,0 +1,2448 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LabReserve - จองเครื่องมือวิทยาศาสตร์</title>
+  <style>
+    :root {
+      --bg: #edf4f6;
+      --surface: #ffffff;
+      --surface-soft: #eef3f8;
+      --ink: #18202a;
+      --muted: #647283;
+      --line: #d9e0e8;
+      --primary: #126b72;
+      --primary-dark: #0d4e55;
+      --primary-soft: #d8f0ee;
+      --accent: #b87333;
+      --accent-soft: #fff1df;
+      --aqua: #19a7a8;
+      --coral: #ff6b6b;
+      --violet: #7c5cff;
+      --gold: #f2b84b;
+      --mint: #35c486;
+      --sky: #4c9aff;
+      --success: #247a46;
+      --danger: #b33a3a;
+      --warning: #a96d16;
+      --shadow: 0 18px 40px rgba(25, 45, 60, 0.1);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background:
+        radial-gradient(circle at 8% 12%, rgba(18, 107, 114, 0.14), transparent 30%),
+        radial-gradient(circle at 90% 16%, rgba(184, 115, 51, 0.13), transparent 28%),
+        linear-gradient(135deg, #edf4f6 0%, #f8fbfc 46%, #eef2fa 100%);
+      color: var(--ink);
+      letter-spacing: 0;
+      overflow-x: hidden;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      position: relative;
+      z-index: 1;
+    }
+
+    .molecular-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .molecule {
+      position: absolute;
+      width: 220px;
+      height: 148px;
+      opacity: 0.22;
+      animation: drift 18s ease-in-out infinite alternate;
+    }
+
+    .molecule:nth-child(1) {
+      left: 16%;
+      top: 9%;
+    }
+
+    .molecule:nth-child(2) {
+      right: 6%;
+      top: 46%;
+      transform: scale(0.82) rotate(18deg);
+      animation-duration: 23s;
+    }
+
+    .molecule:nth-child(3) {
+      left: 58%;
+      bottom: 5%;
+      transform: scale(0.72) rotate(-10deg);
+      animation-duration: 20s;
+    }
+
+    .bond {
+      position: absolute;
+      height: 2px;
+      background: rgba(18, 107, 114, 0.72);
+      transform-origin: left center;
+    }
+
+    .bond.one {
+      width: 84px;
+      left: 54px;
+      top: 48px;
+      transform: rotate(20deg);
+    }
+
+    .bond.two {
+      width: 78px;
+      left: 103px;
+      top: 84px;
+      transform: rotate(-28deg);
+    }
+
+    .bond.three {
+      width: 62px;
+      left: 42px;
+      top: 92px;
+      transform: rotate(-48deg);
+    }
+
+    .atom {
+      position: absolute;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 2px solid rgba(18, 107, 114, 0.78);
+      box-shadow: 0 0 0 7px rgba(18, 107, 114, 0.08);
+    }
+
+    .atom.a { left: 42px; top: 36px; }
+    .atom.b { left: 126px; top: 66px; border-color: rgba(184, 115, 51, 0.8); }
+    .atom.c { left: 180px; top: 42px; }
+    .atom.d { left: 34px; top: 105px; border-color: rgba(36, 122, 70, 0.72); }
+
+    .formula {
+      position: absolute;
+      color: rgba(18, 107, 114, 0.2);
+      font-weight: 800;
+      letter-spacing: 0;
+      animation: floatName 16s ease-in-out infinite;
+      white-space: nowrap;
+    }
+
+    .formula:nth-child(4) {
+      left: 72%;
+      top: 18%;
+      font-size: 30px;
+    }
+
+    .formula:nth-child(5) {
+      left: 28%;
+      bottom: 16%;
+      font-size: 24px;
+      color: rgba(184, 115, 51, 0.2);
+      animation-duration: 19s;
+    }
+
+    .formula:nth-child(6) {
+      left: 7%;
+      bottom: 28%;
+      font-size: 22px;
+      color: rgba(36, 122, 70, 0.18);
+      animation-duration: 22s;
+    }
+
+    @keyframes drift {
+      from { translate: -10px -8px; }
+      to { translate: 24px 18px; }
+    }
+
+    @keyframes floatName {
+      0%, 100% { transform: translateY(0) translateX(0); }
+      50% { transform: translateY(-18px) translateX(22px); }
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, #122f36 0%, #1d2831 100%);
+      color: #eef6f7;
+      padding: 24px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      box-shadow: 12px 0 40px rgba(18, 37, 45, 0.14);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 44px;
+    }
+
+    .brand-mark {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #dff7f5, #fff1df);
+      color: var(--primary-dark);
+      font-weight: 800;
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.14);
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 19px;
+      line-height: 1.1;
+    }
+
+    .brand p {
+      margin: 2px 0 0;
+      color: #a9bdc4;
+      font-size: 12px;
+    }
+
+    .nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav button {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: #d9e7eb;
+      text-align: left;
+      padding: 12px;
+      border-radius: 8px;
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .nav button.active,
+    .nav button:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+    }
+
+    .sidebar-note {
+      margin-top: auto;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      padding: 14px;
+      color: #c7d7dc;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    main {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .topbar {
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.88), rgba(244, 250, 255, 0.78)),
+        radial-gradient(circle at 18% 0%, rgba(25, 167, 168, 0.16), transparent 34%),
+        radial-gradient(circle at 78% 10%, rgba(255, 107, 107, 0.13), transparent 30%);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line);
+      padding: 18px 28px 16px;
+      display: grid;
+      grid-template-columns: minmax(260px, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      box-shadow: 0 16px 34px rgba(35, 58, 82, 0.08);
+    }
+
+    .topbar h2 {
+      margin: 0;
+      font-size: 25px;
+    }
+
+    .topbar p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .quick-actions {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(140px, 1fr));
+      gap: 10px;
+    }
+
+    .quick-action {
+      border: 1px solid rgba(255, 255, 255, 0.68);
+      border-radius: 8px;
+      padding: 11px 12px;
+      min-height: 58px;
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      gap: 10px;
+      align-items: center;
+      color: #ffffff;
+      text-align: left;
+      box-shadow: 0 14px 30px rgba(40, 58, 80, 0.16);
+      transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .quick-action::after {
+      content: "";
+      position: absolute;
+      right: -18px;
+      top: -28px;
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .quick-action:hover {
+      transform: translateY(-2px);
+      filter: saturate(1.1);
+      box-shadow: 0 18px 36px rgba(40, 58, 80, 0.2);
+    }
+
+    .quick-action strong,
+    .quick-action span {
+      position: relative;
+      z-index: 1;
+    }
+
+    .quick-action strong {
+      display: block;
+      font-size: 14px;
+      line-height: 1.2;
+    }
+
+    .quick-action span:not(.action-icon) {
+      display: block;
+      margin-top: 3px;
+      font-size: 12px;
+      line-height: 1.25;
+      color: rgba(255, 255, 255, 0.84);
+    }
+
+    .action-icon,
+    .section-icon,
+    .item-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: inline-grid;
+      place-items: center;
+      background: rgba(255, 255, 255, 0.22);
+      color: #ffffff;
+      font-size: 17px;
+      font-weight: 800;
+      position: relative;
+      z-index: 1;
+    }
+
+    .quick-action.calendar { background: linear-gradient(135deg, var(--sky), var(--aqua)); }
+    .quick-action.booking { background: linear-gradient(135deg, var(--coral), #ff8f5a); }
+    .quick-action.notifications { background: linear-gradient(135deg, var(--gold), #ff8f5a); }
+    .quick-action.approval { background: linear-gradient(135deg, var(--mint), #11a36a); }
+    .quick-action.ops { background: linear-gradient(135deg, var(--violet), #3f7bff); }
+
+    .notify-button {
+      border: 1px solid var(--line);
+      background: linear-gradient(135deg, #ffffff, #f7fbff);
+      color: var(--ink);
+      border-radius: 8px;
+      min-height: 40px;
+      padding: 9px 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 8px 20px rgba(25, 45, 60, 0.08);
+    }
+
+    .notify-dot {
+      min-width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      display: inline-grid;
+      place-items: center;
+      background: var(--accent);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 800;
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(184, 115, 51, 0.3); }
+      50% { box-shadow: 0 0 0 8px rgba(184, 115, 51, 0); }
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #dfe9eb;
+      color: var(--primary-dark);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+    }
+
+    .content {
+      padding: 24px 28px 32px;
+      display: grid;
+      gap: 18px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .metric {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+      min-height: 96px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 180ms ease, box-shadow 180ms ease;
+    }
+
+    .metric::after {
+      content: "";
+      position: absolute;
+      right: -28px;
+      top: -28px;
+      width: 86px;
+      height: 86px;
+      border-radius: 50%;
+      background: rgba(18, 107, 114, 0.08);
+    }
+
+    .metric:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 22px 44px rgba(25, 45, 60, 0.14);
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 28px;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(360px, 1.2fr) minmax(320px, 0.8fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+    }
+
+    .panel-header {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      background:
+        linear-gradient(90deg, rgba(25, 167, 168, 0.08), rgba(255, 255, 255, 0)),
+        #ffffff;
+    }
+
+    .panel-header h3 {
+      margin: 0;
+      font-size: 17px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-header h3::before {
+      content: "◆";
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      display: inline-grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--aqua), var(--sky));
+      color: #ffffff;
+      font-size: 12px;
+      box-shadow: 0 8px 18px rgba(25, 167, 168, 0.22);
+    }
+
+    .panel-body {
+      padding: 18px;
+    }
+
+    .filters,
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 11px;
+      background: #ffffff;
+      color: var(--ink);
+      min-height: 42px;
+    }
+
+    textarea {
+      min-height: 82px;
+      resize: vertical;
+    }
+
+    .wide {
+      grid-column: 1 / -1;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--primary);
+      color: #ffffff;
+      font-weight: 600;
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+      box-shadow: 0 10px 22px rgba(18, 107, 114, 0.16);
+    }
+
+    .btn::first-letter,
+    .notify-button::first-letter,
+    .mini-btn::first-letter {
+      font-weight: 900;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 26px rgba(18, 107, 114, 0.2);
+    }
+
+    .btn.secondary {
+      background: var(--surface-soft);
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .btn.danger {
+      background: var(--danger);
+    }
+
+    .btn.success {
+      background: var(--success);
+    }
+
+    .calendar-toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      margin: 18px 0 12px;
+    }
+
+    .calendar-toolbar strong {
+      font-size: 18px;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(74px, 1fr));
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--line);
+      gap: 1px;
+    }
+
+    .weekday,
+    .day {
+      background: #ffffff;
+      min-height: 88px;
+      padding: 8px;
+    }
+
+    .weekday {
+      min-height: 40px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      background: #f0f4f6;
+    }
+
+    .day {
+      display: grid;
+      align-content: start;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .day:hover,
+    .day.selected {
+      outline: 2px solid var(--primary);
+      outline-offset: -2px;
+    }
+
+    .day.muted {
+      background: #f8fafb;
+      color: #a4adb8;
+    }
+
+    .date-num {
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .booking-chip {
+      border-radius: 6px;
+      padding: 4px 6px;
+      font-size: 11px;
+      line-height: 1.25;
+      color: #ffffff;
+      background: var(--primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .booking-chip.pending {
+      background: var(--warning);
+    }
+
+    .booking-chip.rejected {
+      background: var(--danger);
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .request {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      background: #ffffff;
+      animation: softIn 260ms ease both;
+      position: relative;
+      overflow: hidden;
+      border-left: 5px solid var(--sky);
+    }
+
+    .request::before {
+      content: "⚗";
+      position: absolute;
+      right: 14px;
+      bottom: 10px;
+      color: rgba(76, 154, 255, 0.12);
+      font-size: 44px;
+      font-weight: 800;
+    }
+
+    @keyframes softIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .request-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .request h4 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .request p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .badge {
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge.pending {
+      color: #744807;
+      background: #fff0cf;
+    }
+
+    .badge.approved {
+      color: #145a32;
+      background: #dff3e6;
+    }
+
+    .badge.rejected {
+      color: #8c2424;
+      background: #f8dddd;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .alert {
+      display: none;
+      margin-top: 12px;
+      border-radius: 8px;
+      padding: 11px 12px;
+      background: #f8dddd;
+      color: #7d2323;
+      border: 1px solid #edbcbc;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .alert.show {
+      display: block;
+    }
+
+    .empty {
+      padding: 18px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      background: #fbfcfd;
+    }
+
+    .notification-strip {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .notification-hero {
+      border: 1px solid rgba(18, 107, 114, 0.18);
+      background: linear-gradient(135deg, rgba(216, 240, 238, 0.86), rgba(255, 241, 223, 0.76));
+      border-radius: 8px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .notification-hero::after {
+      content: "H2O  C6H12O6  NaCl";
+      position: absolute;
+      right: 18px;
+      bottom: 10px;
+      color: rgba(18, 107, 114, 0.18);
+      font-size: 28px;
+      font-weight: 800;
+      white-space: nowrap;
+      animation: floatName 13s ease-in-out infinite;
+    }
+
+    .notification-hero h3 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    .notification-hero p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      max-width: 680px;
+    }
+
+    .notification-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .notification-item {
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--primary);
+      border-radius: 8px;
+      padding: 12px;
+      background: #ffffff;
+      display: grid;
+      gap: 6px;
+      animation: softIn 240ms ease both;
+      position: relative;
+    }
+
+    .notification-item::before {
+      content: "!";
+      width: 24px;
+      height: 24px;
+      border-radius: 8px;
+      display: inline-grid;
+      place-items: center;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      font-weight: 900;
+    }
+
+    .notification-item.staff {
+      border-left-color: var(--accent);
+    }
+
+    .notification-item.staff::before {
+      content: "✓";
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .notification-item strong {
+      font-size: 14px;
+    }
+
+    .notification-item span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .ops-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(280px, 1fr));
+      gap: 14px;
+      align-items: start;
+    }
+
+    .channel-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .channel-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+      min-height: 104px;
+      border-top: 4px solid var(--aqua);
+    }
+
+    .channel-card:nth-child(2) {
+      border-top-color: var(--mint);
+    }
+
+    .channel-card:nth-child(3) {
+      border-top-color: var(--violet);
+    }
+
+    .channel-card strong {
+      font-size: 14px;
+    }
+
+    .channel-card span,
+    .permission-row span,
+    .staff-row span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .channel-toggle {
+      justify-self: start;
+      border: 0;
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .channel-toggle.off {
+      background: #eef1f3;
+      color: var(--muted);
+    }
+
+    .permission-list,
+    .staff-list,
+    .user-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .permission-row,
+    .staff-row,
+    .user-row {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #ffffff;
+      display: grid;
+      gap: 8px;
+      border-left: 5px solid var(--mint);
+      position: relative;
+    }
+
+    .staff-row {
+      border-left-color: var(--gold);
+    }
+
+    .user-row {
+      border-left-color: var(--violet);
+    }
+
+    .password-form {
+      display: grid;
+      grid-template-columns: minmax(140px, 1fr) minmax(160px, 1fr) auto;
+      gap: 8px;
+      align-items: end;
+      margin-top: 12px;
+    }
+
+    .password-form .btn {
+      min-height: 42px;
+    }
+
+    .row-top {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .row-top strong {
+      font-size: 14px;
+    }
+
+    .staff-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .mini-btn {
+      border: 1px solid var(--line);
+      background: #ffffff;
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 7px 9px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .mini-btn.active {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+    }
+
+    .toast-stack {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      display: grid;
+      gap: 10px;
+      z-index: 9;
+      width: min(360px, calc(100vw - 32px));
+    }
+
+    .toast {
+      border-radius: 8px;
+      border: 1px solid rgba(18, 107, 114, 0.22);
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 18px 46px rgba(25, 45, 60, 0.2);
+      padding: 13px 14px;
+      animation: toastIn 260ms ease both;
+    }
+
+    .toast strong {
+      display: block;
+      font-size: 14px;
+    }
+
+    .toast span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      place-items: center;
+      padding: 20px;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(25, 167, 168, 0.24), transparent 30%),
+        radial-gradient(circle at 80% 10%, rgba(255, 107, 107, 0.2), transparent 28%),
+        rgba(12, 28, 36, 0.62);
+      backdrop-filter: blur(8px);
+    }
+
+    .login-overlay.show {
+      display: grid;
+    }
+
+    .login-card {
+      width: min(460px, 100%);
+      border-radius: 8px;
+      background: #ffffff;
+      border: 1px solid var(--line);
+      box-shadow: 0 24px 70px rgba(11, 26, 34, 0.28);
+      padding: 22px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .login-card h3 {
+      margin: 0;
+      font-size: 23px;
+    }
+
+    .login-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .login-help {
+      display: grid;
+      gap: 6px;
+      padding: 12px;
+      border-radius: 8px;
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .role-pill {
+      border-radius: 999px;
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+      padding: 6px 9px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    @media (max-width: 1020px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        padding: 14px;
+        gap: 12px;
+      }
+
+      .nav {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+      }
+
+      .sidebar-note {
+        display: none;
+      }
+
+      .workspace,
+      .metrics,
+      .notification-strip,
+      .ops-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .channel-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .top-actions {
+        justify-content: flex-start;
+      }
+
+      .quick-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 680px) {
+      .topbar {
+        align-items: stretch;
+        padding: 16px;
+      }
+
+      .quick-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .quick-action {
+        min-height: 52px;
+      }
+
+      .content {
+        padding: 16px;
+      }
+
+      .filters,
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .calendar-grid {
+        grid-template-columns: repeat(7, minmax(42px, 1fr));
+      }
+
+      .weekday,
+      .day {
+        min-height: 68px;
+        padding: 5px;
+      }
+
+      .booking-chip {
+        font-size: 10px;
+      }
+
+      .nav button {
+        grid-template-columns: 1fr;
+        text-align: center;
+        font-size: 11px;
+        padding: 10px 6px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="molecular-bg" aria-hidden="true">
+    <div class="molecule">
+      <i class="bond one"></i><i class="bond two"></i><i class="bond three"></i>
+      <i class="atom a"></i><i class="atom b"></i><i class="atom c"></i><i class="atom d"></i>
+    </div>
+    <div class="molecule">
+      <i class="bond one"></i><i class="bond two"></i><i class="bond three"></i>
+      <i class="atom a"></i><i class="atom b"></i><i class="atom c"></i><i class="atom d"></i>
+    </div>
+    <div class="molecule">
+      <i class="bond one"></i><i class="bond two"></i><i class="bond three"></i>
+      <i class="atom a"></i><i class="atom b"></i><i class="atom c"></i><i class="atom d"></i>
+    </div>
+    <span class="formula">C6H12O6</span>
+    <span class="formula">NaCl</span>
+    <span class="formula">H2O</span>
+  </div>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">LR</div>
+        <div>
+          <h1>LabReserve</h1>
+          <p>ระบบจองเครื่องมือวิทยาศาสตร์</p>
+        </div>
+      </div>
+      <nav class="nav" aria-label="เมนูหลัก">
+        <button class="active" type="button" data-scroll="calendar">▦ ปฏิทิน</button>
+        <button type="button" data-scroll="booking">＋ จองเครื่อง</button>
+        <button type="button" data-scroll="approval">✓ อนุมัติ</button>
+        <button type="button" data-scroll="notifications">แจ้งเตือน</button>
+        <button type="button" data-scroll="ops">ระบบหลังบ้าน</button>
+      </nav>
+      <div class="sidebar-note">
+        การจองที่เวลาซ้ำกับรายการที่รออนุมัติหรืออนุมัติแล้วจะถูกปฏิเสธอัตโนมัติ เพื่อป้องกันการใช้เครื่องชนกัน
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div>
+          <h2>ภาพรวมการจองเครื่องมือ</h2>
+          <p>ตรวจสอบเวลาว่าง ส่งคำขอ และจัดการการอนุมัติจากหน้าเดียว</p>
+        </div>
+        <div class="top-actions">
+          <button class="notify-button" type="button" data-scroll="notifications">
+            แจ้งเตือน <span class="notify-dot" id="notificationBadge">0</span>
+          </button>
+          <span class="role-pill" id="roleBadge">ยังไม่ได้เข้าสู่ระบบ</span>
+          <button class="notify-button" type="button" id="logoutBtn">ออกจากระบบ</button>
+          <div class="profile">
+            <div class="avatar">ผบ</div>
+            <span id="currentUserName">ผู้ใช้งาน</span>
+          </div>
+        </div>
+        <div class="quick-actions" aria-label="ปุ่มลัดงานหลัก">
+          <button class="quick-action booking" type="button" data-scroll="booking">
+            <span class="action-icon">＋</span>
+            <span><strong>จองเครื่องมือ</strong><span>ส่งคำขอใหม่</span></span>
+          </button>
+          <button class="quick-action calendar" type="button" data-scroll="calendar">
+            <span class="action-icon">▦</span>
+            <span><strong>ดูปฏิทิน</strong><span>เช็กเวลาว่าง</span></span>
+          </button>
+          <button class="quick-action approval" type="button" data-scroll="approval">
+            <span class="action-icon">✓</span>
+            <span><strong>อนุมัติคำขอ</strong><span>จัดการรายการรอ</span></span>
+          </button>
+          <button class="quick-action notifications" type="button" data-scroll="notifications">
+            <span class="action-icon">!</span>
+            <span><strong>แจ้งเตือน</strong><span>Email / LINE / Teams</span></span>
+          </button>
+          <button class="quick-action ops" type="button" data-scroll="ops">
+            <span class="action-icon">⚙</span>
+            <span><strong>ระบบหลังบ้าน</strong><span>สิทธิ์และคิวงาน</span></span>
+          </button>
+        </div>
+      </header>
+
+      <section class="content">
+        <div class="metrics">
+          <div class="metric">
+            <span>เครื่องมือทั้งหมด</span>
+            <strong id="toolCount">4</strong>
+          </div>
+          <div class="metric">
+            <span>คำขอรออนุมัติ</span>
+            <strong id="pendingCount">0</strong>
+          </div>
+          <div class="metric">
+            <span>รายการอนุมัติแล้ว</span>
+            <strong id="approvedCount">0</strong>
+          </div>
+          <div class="metric">
+            <span>การจองวันนี้</span>
+            <strong id="todayCount">0</strong>
+          </div>
+        </div>
+
+        <section class="notification-strip" id="notifications">
+          <div class="notification-hero">
+            <h3>ระบบแจ้งเตือนอัตโนมัติ</h3>
+            <p>เมื่อมีผู้ส่งคำขอ ระบบจะแจ้งผู้มีสิทธิอนุมัติให้ตรวจรายการ และแจ้งเจ้าหน้าที่ให้เตรียมเครื่องมือหรือตรวจสอบความพร้อมก่อนช่วงเวลาที่ขอใช้</p>
+          </div>
+          <section class="panel">
+            <div class="panel-header">
+              <h3>ข้อความล่าสุด</h3>
+              <button class="btn secondary" type="button" id="clearNotifications">ล้างแจ้งเตือน</button>
+            </div>
+            <div class="panel-body">
+              <div class="notification-list" id="notificationList"></div>
+            </div>
+          </section>
+        </section>
+
+        <section class="ops-grid" id="ops">
+          <section class="panel">
+            <div class="panel-header">
+              <h3>ช่องทางและสิทธิ์อนุมัติ</h3>
+            </div>
+            <div class="panel-body">
+              <div class="channel-grid" id="channelGrid"></div>
+              <div class="permission-list" id="permissionList" style="margin-top: 12px;"></div>
+            </div>
+          </section>
+
+          <section class="panel" id="userAdminPanel">
+            <div class="panel-header">
+              <h3>จัดการผู้ใช้</h3>
+            </div>
+            <div class="panel-body">
+              <div class="user-list" id="userList"></div>
+              <form class="password-form" id="passwordForm">
+                <label>
+                  ผู้ใช้
+                  <select id="passwordUser"></select>
+                </label>
+                <label>
+                  รหัสผ่านใหม่
+                  <input id="newPassword" type="password" minlength="8" required placeholder="อย่างน้อย 8 ตัวอักษร">
+                </label>
+                <button class="btn" type="submit">เปลี่ยนรหัส</button>
+              </form>
+              <div class="alert" id="passwordAlert"></div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h3>คิวงานเจ้าหน้าที่</h3>
+              <button class="btn secondary" type="button" id="notifyStaffBtn">ส่งแจ้งเตือนซ้ำ</button>
+            </div>
+            <div class="panel-body">
+              <div class="staff-list" id="staffQueue"></div>
+            </div>
+          </section>
+        </section>
+
+        <div class="workspace">
+          <section class="panel" id="calendar">
+            <div class="panel-header">
+              <h3>ปฏิทินสถานะเครื่องมือ</h3>
+              <button class="btn secondary" type="button" id="todayBtn">วันนี้</button>
+            </div>
+            <div class="panel-body">
+              <div class="filters">
+                <label>
+                  เลือกเครื่องมือ
+                  <select id="calendarTool"></select>
+                </label>
+                <label>
+                  แสดงสถานะ
+                  <select id="statusFilter">
+                    <option value="active">รออนุมัติ + อนุมัติแล้ว</option>
+                    <option value="all">ทั้งหมด</option>
+                    <option value="approved">อนุมัติแล้ว</option>
+                    <option value="pending">รออนุมัติ</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="calendar-toolbar">
+                <button class="btn secondary" type="button" id="prevMonth">‹</button>
+                <strong id="monthLabel"></strong>
+                <button class="btn secondary" type="button" id="nextMonth">›</button>
+              </div>
+
+              <div class="calendar-grid" id="calendarGrid" aria-label="ปฏิทินรายเดือน"></div>
+            </div>
+          </section>
+
+          <section class="panel" id="booking">
+            <div class="panel-header">
+              <h3>ส่งคำขอจอง</h3>
+            </div>
+            <div class="panel-body">
+              <form id="bookingForm" class="form-grid">
+                <label>
+                  ผู้จอง
+                  <input id="requester" required placeholder="เช่น ดร.สมชาย">
+                </label>
+                <label>
+                  หน่วยงาน
+                  <input id="department" required placeholder="เช่น เคมีวิเคราะห์">
+                </label>
+                <label class="wide">
+                  เครื่องมือ
+                  <select id="toolSelect" required></select>
+                </label>
+                <label>
+                  วันที่เริ่ม
+                  <input id="startDate" type="date" required>
+                </label>
+                <label>
+                  เวลาเริ่ม
+                  <input id="startTime" type="time" required>
+                </label>
+                <label>
+                  วันที่สิ้นสุด
+                  <input id="endDate" type="date" required>
+                </label>
+                <label>
+                  เวลาสิ้นสุด
+                  <input id="endTime" type="time" required>
+                </label>
+                <label class="wide">
+                  วัตถุประสงค์
+                  <textarea id="purpose" required placeholder="ระบุโครงการ ตัวอย่าง และเงื่อนไขสำคัญ"></textarea>
+                </label>
+                <button class="btn wide" type="submit">＋ ส่งคำขอจอง</button>
+              </form>
+              <div class="alert" id="conflictAlert"></div>
+            </div>
+          </section>
+        </div>
+
+        <section class="panel" id="approval">
+          <div class="panel-header">
+            <h3>รายการคำขอและการอนุมัติ</h3>
+            <button class="btn secondary" type="button" id="seedBtn">เพิ่มข้อมูลตัวอย่าง</button>
+          </div>
+          <div class="panel-body">
+            <div class="list" id="requestList"></div>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+  <div class="login-overlay" id="loginOverlay">
+    <form class="login-card" id="loginForm">
+      <div class="brand">
+        <div class="brand-mark">LR</div>
+        <div>
+          <h3>เข้าสู่ระบบ LabReserve</h3>
+          <p>ต้องเข้าสู่ระบบก่อนใช้งานจริง เพื่อควบคุมสิทธิ์การจอง อนุมัติ และจัดการคิวเจ้าหน้าที่</p>
+        </div>
+      </div>
+      <label>
+        ชื่อผู้ใช้
+        <input id="loginUsername" autocomplete="username" required placeholder="เช่น admin">
+      </label>
+      <label>
+        รหัสผ่าน
+        <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="กรอกรหัสผ่าน">
+      </label>
+      <button class="btn" type="submit">เข้าสู่ระบบ</button>
+      <div class="alert" id="loginAlert"></div>
+      <div class="login-help">
+        <strong>บัญชีเริ่มต้นสำหรับทดสอบ</strong>
+        <span>admin / admin1234</span>
+        <span>approver / approve1234</span>
+        <span>staff / staff1234</span>
+        <span>requester / request1234</span>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const tools = [
+      "HPLC Agilent 1260",
+      "GC-MS Shimadzu QP2020",
+      "SEM JEOL JSM-IT200",
+      "FTIR Bruker Alpha"
+    ];
+
+    const toolConfig = {
+      "HPLC Agilent 1260": {
+        approver: "รองคณบดีฝ่ายวิจัย",
+        staff: "เจ้าหน้าที่เคมีวิเคราะห์",
+        channels: ["email", "line", "teams"]
+      },
+      "GC-MS Shimadzu QP2020": {
+        approver: "หัวหน้าศูนย์เครื่องมือ",
+        staff: "เจ้าหน้าที่มวลสาร",
+        channels: ["email", "teams"]
+      },
+      "SEM JEOL JSM-IT200": {
+        approver: "ผู้จัดการห้องปฏิบัติการวัสดุ",
+        staff: "เจ้าหน้าที่กล้องจุลทรรศน์",
+        channels: ["email", "line"]
+      },
+      "FTIR Bruker Alpha": {
+        approver: "หัวหน้าห้องสเปกโทรสโกปี",
+        staff: "เจ้าหน้าที่สเปกโทรสโกปี",
+        channels: ["email", "line", "teams"]
+      }
+    };
+
+    const channelLabels = {
+      email: "Email",
+      line: "LINE",
+      teams: "Microsoft Teams"
+    };
+
+    const state = {
+      visibleDate: new Date(2026, 5, 1),
+      selectedDate: new Date(2026, 5, 4),
+      bookings: [
+        {
+          id: crypto.randomUUID(),
+          requester: "ดร.กานต์",
+          department: "วัสดุศาสตร์",
+          tool: "SEM JEOL JSM-IT200",
+          start: "2026-06-06T09:00",
+          end: "2026-06-06T12:00",
+          purpose: "ตรวจภาพพื้นผิวตัวอย่างโพลิเมอร์",
+          status: "approved",
+          staffStatus: "ready"
+        },
+        {
+          id: crypto.randomUUID(),
+          requester: "คุณภัทร",
+          department: "เคมีวิเคราะห์",
+          tool: "HPLC Agilent 1260",
+          start: "2026-06-07T13:00",
+          end: "2026-06-07T16:30",
+          purpose: "วิเคราะห์สารมาตรฐานในตัวอย่างน้ำ",
+          status: "pending",
+          staffStatus: "waiting"
+        }
+      ],
+      notifications: [
+        {
+          id: crypto.randomUUID(),
+          audience: "approver",
+          title: "มีคำขอรออนุมัติ",
+          message: "HPLC Agilent 1260 มีคำขอใช้งานใหม่ที่ต้องตรวจสอบช่วงเวลาและวัตถุประสงค์",
+          time: "เริ่มต้นระบบ",
+          read: false
+        },
+        {
+          id: crypto.randomUUID(),
+          audience: "staff",
+          title: "เตรียมเครื่องมือ",
+          message: "SEM JEOL JSM-IT200 ได้รับอนุมัติแล้ว เจ้าหน้าที่สามารถตรวจสอบความพร้อมก่อนใช้งาน",
+          time: "เริ่มต้นระบบ",
+          read: false
+        }
+      ]
+    };
+
+    const els = {
+      calendarGrid: document.querySelector("#calendarGrid"),
+      monthLabel: document.querySelector("#monthLabel"),
+      calendarTool: document.querySelector("#calendarTool"),
+      toolSelect: document.querySelector("#toolSelect"),
+      statusFilter: document.querySelector("#statusFilter"),
+      form: document.querySelector("#bookingForm"),
+      alert: document.querySelector("#conflictAlert"),
+      requestList: document.querySelector("#requestList"),
+      toolCount: document.querySelector("#toolCount"),
+      pendingCount: document.querySelector("#pendingCount"),
+      approvedCount: document.querySelector("#approvedCount"),
+      todayCount: document.querySelector("#todayCount"),
+      notificationList: document.querySelector("#notificationList"),
+      notificationBadge: document.querySelector("#notificationBadge"),
+      toastStack: document.querySelector("#toastStack"),
+      clearNotifications: document.querySelector("#clearNotifications"),
+      channelGrid: document.querySelector("#channelGrid"),
+      permissionList: document.querySelector("#permissionList"),
+      staffQueue: document.querySelector("#staffQueue"),
+      notifyStaffBtn: document.querySelector("#notifyStaffBtn"),
+      loginOverlay: document.querySelector("#loginOverlay"),
+      loginForm: document.querySelector("#loginForm"),
+      loginUsername: document.querySelector("#loginUsername"),
+      loginPassword: document.querySelector("#loginPassword"),
+      loginAlert: document.querySelector("#loginAlert"),
+      logoutBtn: document.querySelector("#logoutBtn"),
+      roleBadge: document.querySelector("#roleBadge"),
+      currentUserName: document.querySelector("#currentUserName"),
+      userAdminPanel: document.querySelector("#userAdminPanel"),
+      userList: document.querySelector("#userList"),
+      passwordForm: document.querySelector("#passwordForm"),
+      passwordUser: document.querySelector("#passwordUser"),
+      newPassword: document.querySelector("#newPassword"),
+      passwordAlert: document.querySelector("#passwordAlert")
+    };
+
+    let currentUser = null;
+    let users = [];
+
+    const statusText = {
+      pending: "รออนุมัติ",
+      approved: "อนุมัติแล้ว",
+      rejected: "ไม่อนุมัติ"
+    };
+
+    const monthNames = [
+      "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+      "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+    ];
+
+    function pad(value) {
+      return String(value).padStart(2, "0");
+    }
+
+    function toDateInput(date) {
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    }
+
+    function sameDay(a, b) {
+      return a.getFullYear() === b.getFullYear() &&
+        a.getMonth() === b.getMonth() &&
+        a.getDate() === b.getDate();
+    }
+
+    function getRange(formValues) {
+      return {
+        start: new Date(`${formValues.startDate}T${formValues.startTime}`),
+        end: new Date(`${formValues.endDate}T${formValues.endTime}`)
+      };
+    }
+
+    function overlaps(aStart, aEnd, bStart, bEnd) {
+      return aStart < bEnd && bStart < aEnd;
+    }
+
+    function findConflict(tool, start, end, ignoreId = null) {
+      return state.bookings.find((booking) => {
+        if (booking.id === ignoreId || booking.tool !== tool || booking.status === "rejected") return false;
+        return overlaps(start, end, new Date(booking.start), new Date(booking.end));
+      });
+    }
+
+    function formatDateTime(value) {
+      const date = new Date(value);
+      return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    function filteredBookings() {
+      const tool = els.calendarTool.value;
+      const filter = els.statusFilter.value;
+      return state.bookings.filter((booking) => {
+        if (booking.tool !== tool) return false;
+        if (filter === "active") return booking.status !== "rejected";
+        if (filter === "all") return true;
+        return booking.status === filter;
+      });
+    }
+
+    function renderCalendar() {
+      const year = state.visibleDate.getFullYear();
+      const month = state.visibleDate.getMonth();
+      const firstDay = new Date(year, month, 1);
+      const startOffset = firstDay.getDay();
+      const gridStart = new Date(year, month, 1 - startOffset);
+      const bookings = filteredBookings();
+
+      els.monthLabel.textContent = `${monthNames[month]} ${year}`;
+      els.calendarGrid.innerHTML = "";
+
+      ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"].forEach((day) => {
+        const cell = document.createElement("div");
+        cell.className = "weekday";
+        cell.textContent = day;
+        els.calendarGrid.appendChild(cell);
+      });
+
+      for (let index = 0; index < 42; index += 1) {
+        const date = new Date(gridStart);
+        date.setDate(gridStart.getDate() + index);
+
+        const cell = document.createElement("button");
+        cell.type = "button";
+        cell.className = "day";
+        if (date.getMonth() !== month) cell.classList.add("muted");
+        if (sameDay(date, state.selectedDate)) cell.classList.add("selected");
+        cell.setAttribute("aria-label", `เลือกวันที่ ${toDateInput(date)}`);
+
+        const dateNum = document.createElement("span");
+        dateNum.className = "date-num";
+        dateNum.textContent = date.getDate();
+        cell.appendChild(dateNum);
+
+        bookings
+          .filter((booking) => sameDay(new Date(booking.start), date))
+          .slice(0, 3)
+          .forEach((booking) => {
+            const chip = document.createElement("span");
+            chip.className = `booking-chip ${booking.status}`;
+            chip.textContent = `${formatDateTime(booking.start).slice(-5)} ${booking.requester}`;
+            chip.title = `${booking.tool} ${statusText[booking.status]}`;
+            cell.appendChild(chip);
+          });
+
+        cell.addEventListener("click", () => {
+          state.selectedDate = date;
+          document.querySelector("#startDate").value = toDateInput(date);
+          document.querySelector("#endDate").value = toDateInput(date);
+          renderCalendar();
+        });
+
+        els.calendarGrid.appendChild(cell);
+      }
+    }
+
+    function renderRequests() {
+      const sorted = [...state.bookings].sort((a, b) => new Date(a.start) - new Date(b.start));
+      els.requestList.innerHTML = "";
+
+      if (!sorted.length) {
+        els.requestList.innerHTML = '<div class="empty">ยังไม่มีคำขอจอง</div>';
+        return;
+      }
+
+      sorted.forEach((booking) => {
+        const item = document.createElement("article");
+        item.className = "request";
+        item.innerHTML = `
+          <div class="request-head">
+            <div>
+              <h4>${booking.tool}</h4>
+              <p>${booking.requester} · ${booking.department}</p>
+            </div>
+            <span class="badge ${booking.status}">${statusText[booking.status]}</span>
+          </div>
+          <p>${formatDateTime(booking.start)} ถึง ${formatDateTime(booking.end)}</p>
+          <p>${booking.purpose}</p>
+        `;
+
+        if (booking.status === "pending") {
+          const actions = document.createElement("div");
+          actions.className = "actions";
+
+          const approve = document.createElement("button");
+          approve.className = "btn success";
+          approve.type = "button";
+          approve.textContent = "✓ อนุมัติ";
+          approve.addEventListener("click", () => updateStatus(booking.id, "approved"));
+
+          const reject = document.createElement("button");
+          reject.className = "btn danger";
+          reject.type = "button";
+          reject.textContent = "× ไม่อนุมัติ";
+          reject.addEventListener("click", () => updateStatus(booking.id, "rejected"));
+
+          actions.append(approve, reject);
+          item.appendChild(actions);
+        }
+
+        els.requestList.appendChild(item);
+      });
+    }
+
+    function audienceLabel(audience) {
+      return audience === "staff" ? "เจ้าหน้าที่" : "ผู้มีสิทธิอนุมัติ";
+    }
+
+    function renderNotifications() {
+      const unread = state.notifications.filter((item) => !item.read).length;
+      els.notificationBadge.textContent = unread;
+      els.notificationBadge.style.display = unread ? "inline-grid" : "none";
+      els.notificationList.innerHTML = "";
+
+      if (!state.notifications.length) {
+        els.notificationList.innerHTML = '<div class="empty">ยังไม่มีข้อความแจ้งเตือน</div>';
+        return;
+      }
+
+      state.notifications.slice(0, 6).forEach((notice) => {
+        const item = document.createElement("article");
+        item.className = `notification-item ${notice.audience}`;
+        item.innerHTML = `
+          <strong>${notice.title}</strong>
+          <span>${audienceLabel(notice.audience)} · ${notice.time}</span>
+          <span>${notice.message}</span>
+        `;
+        els.notificationList.appendChild(item);
+      });
+    }
+
+    function showToast(title, message) {
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.innerHTML = `<strong>${title}</strong><span>${message}</span>`;
+      els.toastStack.appendChild(toast);
+      setTimeout(() => toast.remove(), 4200);
+    }
+
+    function pushNotification(audience, title, message) {
+      state.notifications.unshift({
+        id: crypto.randomUUID(),
+        audience,
+        title,
+        message,
+        time: "เมื่อสักครู่",
+        read: false
+      });
+      showToast(title, message);
+      renderNotifications();
+    }
+
+    const API_BASE = location.port === "8775" ? "" : "http://127.0.0.1:8775";
+    const apiMode = location.protocol === "http:" || location.protocol === "https:" || location.protocol === "file:";
+
+    async function apiRequest(path, options = {}) {
+      if (!apiMode) throw new Error("API server is not available from file mode");
+      const response = await fetch(`${API_BASE}${path}`, {
+        headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+        credentials: "include",
+        ...options
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const error = new Error(payload.error || "request failed");
+        error.payload = payload;
+        error.status = response.status;
+        throw error;
+      }
+      return payload;
+    }
+
+    function applyServerData(data) {
+      if (!data) return;
+      if (Array.isArray(data.bookings)) state.bookings = data.bookings;
+      if (Array.isArray(data.notifications)) state.notifications = data.notifications;
+      renderAll();
+    }
+
+    function roleText(role) {
+      return {
+        admin: "ผู้ดูแลระบบ",
+        approver: "ผู้อนุมัติ",
+        staff: "เจ้าหน้าที่",
+        requester: "ผู้จอง"
+      }[role] || "ผู้ใช้งาน";
+    }
+
+    function setAuthUser(user) {
+      currentUser = user;
+      els.loginOverlay.classList.toggle("show", !user);
+      els.logoutBtn.style.display = user ? "inline-flex" : "none";
+      els.userAdminPanel.style.display = user?.role === "admin" ? "block" : "none";
+      els.roleBadge.textContent = user ? roleText(user.role) : "ยังไม่ได้เข้าสู่ระบบ";
+      els.currentUserName.textContent = user ? user.name : "ผู้ใช้งาน";
+      document.querySelectorAll(".btn.success, .btn.danger").forEach((button) => {
+        button.disabled = user && !["admin", "approver"].includes(user.role);
+      });
+      els.notifyStaffBtn.disabled = user && !["admin", "staff", "approver"].includes(user.role);
+      document.querySelector("#seedBtn").disabled = user && user.role !== "admin";
+      if (user?.role === "admin") loadUsers();
+    }
+
+    function renderUsers() {
+      els.userList.innerHTML = "";
+      els.passwordUser.innerHTML = "";
+      if (!users.length) {
+        els.userList.innerHTML = '<div class="empty">ยังไม่มีข้อมูลผู้ใช้</div>';
+        return;
+      }
+      users.forEach((user) => {
+        const item = document.createElement("article");
+        item.className = "user-row";
+        item.innerHTML = `
+          <div class="row-top">
+            <strong>${user.name}</strong>
+            <span class="badge approved">${roleText(user.role)}</span>
+          </div>
+          <span>Username: ${user.username}</span>
+        `;
+        els.userList.appendChild(item);
+
+        const option = document.createElement("option");
+        option.value = user.username;
+        option.textContent = `${user.username} (${roleText(user.role)})`;
+        els.passwordUser.appendChild(option);
+      });
+    }
+
+    async function loadUsers() {
+      if (!apiMode || currentUser?.role !== "admin") return;
+      try {
+        const result = await apiRequest("/api/users");
+        users = result.users || [];
+        renderUsers();
+      } catch (error) {
+        users = [];
+        renderUsers();
+      }
+    }
+
+    async function checkSession() {
+      if (!apiMode) return;
+      try {
+        const result = await apiRequest("/api/me");
+        setAuthUser(result.user);
+        if (result.user) await loadServerData();
+      } catch {
+        setAuthUser(null);
+      }
+    }
+
+    async function loadServerData() {
+      if (!apiMode) return;
+      try {
+        const data = await apiRequest("/api/state");
+        applyServerData(data);
+        showToast("เชื่อมต่อฐานข้อมูลแล้ว", "ข้อมูลการจองจะถูกบันทึกไว้ใน labreserve-db.json");
+      } catch (error) {
+        showToast("ใช้โหมดหน้าเดี่ยว", "ยังเปิดหน้าได้ แต่การบันทึกถาวรต้องเปิดผ่าน server.js");
+      }
+    }
+
+    function activeChannels(tool) {
+      return toolConfig[tool]?.channels || ["email"];
+    }
+
+    function channelSummary(tool) {
+      return activeChannels(tool).map((channel) => channelLabels[channel]).join(", ");
+    }
+
+    function sendToolNotification(tool, audience, title, message) {
+      const config = toolConfig[tool];
+      const recipient = audience === "staff" ? config?.staff : config?.approver;
+      const channels = channelSummary(tool);
+      pushNotification(audience, title, `${message} · ส่งถึง ${recipient || audience} ผ่าน ${channels}`);
+    }
+
+    function staffStatusText(status) {
+      return {
+        waiting: "รอตรวจสอบ",
+        ready: "เตรียมเครื่องแล้ว",
+        issue: "เครื่องขัดข้อง",
+        calibrate: "ต้องสอบเทียบก่อนใช้"
+      }[status] || "รอตรวจสอบ";
+    }
+
+    function renderOperations() {
+      const channelUsage = ["email", "line", "teams"].map((channel) => ({
+        channel,
+        count: tools.filter((tool) => activeChannels(tool).includes(channel)).length
+      }));
+
+      els.channelGrid.innerHTML = "";
+      channelUsage.forEach(({ channel, count }) => {
+        const item = document.createElement("article");
+        item.className = "channel-card";
+        item.innerHTML = `
+          <strong>${channelLabels[channel]}</strong>
+          <span>เปิดใช้กับ ${count} เครื่องมือ</span>
+          <button class="channel-toggle" type="button">${count ? "Active" : "Off"}</button>
+        `;
+        els.channelGrid.appendChild(item);
+      });
+
+      els.permissionList.innerHTML = "";
+      tools.forEach((tool) => {
+        const config = toolConfig[tool];
+        const item = document.createElement("article");
+        item.className = "permission-row";
+        item.innerHTML = `
+          <div class="row-top">
+            <strong>${tool}</strong>
+            <span class="badge approved">${channelSummary(tool)}</span>
+          </div>
+          <span>ผู้อนุมัติ: ${config.approver}</span>
+          <span>เจ้าหน้าที่: ${config.staff}</span>
+        `;
+        els.permissionList.appendChild(item);
+      });
+    }
+
+    function renderStaffQueue() {
+      const queue = state.bookings
+        .filter((booking) => booking.status !== "rejected")
+        .sort((a, b) => new Date(a.start) - new Date(b.start));
+
+      els.staffQueue.innerHTML = "";
+      if (!queue.length) {
+        els.staffQueue.innerHTML = '<div class="empty">ยังไม่มีคิวงานเจ้าหน้าที่</div>';
+        return;
+      }
+
+      queue.forEach((booking) => {
+        const item = document.createElement("article");
+        item.className = "staff-row";
+        item.innerHTML = `
+          <div class="row-top">
+            <strong>${booking.tool}</strong>
+            <span class="badge ${booking.staffStatus === "issue" ? "rejected" : booking.staffStatus === "waiting" ? "pending" : "approved"}">${staffStatusText(booking.staffStatus)}</span>
+          </div>
+          <span>${booking.requester} · ${formatDateTime(booking.start)} ถึง ${formatDateTime(booking.end)}</span>
+          <span>รับผิดชอบ: ${toolConfig[booking.tool]?.staff || "เจ้าหน้าที่"}</span>
+        `;
+
+        const actions = document.createElement("div");
+        actions.className = "staff-actions";
+        [
+          ["ready", "เตรียมแล้ว"],
+          ["issue", "ขัดข้อง"],
+          ["calibrate", "ต้องสอบเทียบ"]
+        ].forEach(([status, label]) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `mini-btn ${booking.staffStatus === status ? "active" : ""}`;
+          button.textContent = label;
+          button.addEventListener("click", () => updateStaffStatus(booking.id, status));
+          actions.appendChild(button);
+        });
+        item.appendChild(actions);
+        els.staffQueue.appendChild(item);
+      });
+    }
+
+    async function updateStaffStatus(id, status) {
+      if (apiMode) {
+        try {
+          const result = await apiRequest(`/api/bookings/${id}/staff-status`, {
+            method: "PATCH",
+            body: JSON.stringify({ staffStatus: status })
+          });
+          applyServerData(result.data);
+          showToast("บันทึกสถานะแล้ว", `สถานะเจ้าหน้าที่: ${staffStatusText(status)}`);
+          return;
+        } catch (error) {
+          showToast("บันทึกไม่สำเร็จ", error.message);
+          return;
+        }
+      }
+
+      const booking = state.bookings.find((item) => item.id === id);
+      if (!booking) return;
+      booking.staffStatus = status;
+      sendToolNotification(
+        booking.tool,
+        status === "issue" ? "approver" : "staff",
+        "อัปเดตสถานะเจ้าหน้าที่",
+        `${booking.tool} ของ ${booking.requester}: ${staffStatusText(status)}`
+      );
+      renderAll();
+    }
+
+    function updateMetrics() {
+      const today = new Date(2026, 5, 4);
+      els.toolCount.textContent = tools.length;
+      els.pendingCount.textContent = state.bookings.filter((item) => item.status === "pending").length;
+      els.approvedCount.textContent = state.bookings.filter((item) => item.status === "approved").length;
+      els.todayCount.textContent = state.bookings.filter((item) => sameDay(new Date(item.start), today)).length;
+    }
+
+    async function updateStatus(id, status) {
+      if (apiMode) {
+        try {
+          const result = await apiRequest(`/api/bookings/${id}/status`, {
+            method: "PATCH",
+            body: JSON.stringify({ status })
+          });
+          applyServerData(result.data);
+          showToast(status === "approved" ? "อนุมัติแล้ว" : "บันทึกไม่อนุมัติแล้ว", "ข้อมูลถูกบันทึกลงฐานข้อมูลแล้ว");
+          showAlert("");
+          return;
+        } catch (error) {
+          if (error.status === 409 && error.payload?.conflict) {
+            const conflict = error.payload.conflict;
+            showAlert(`อนุมัติไม่ได้ เพราะเวลาซ้ำกับ ${conflict.requester} (${formatDateTime(conflict.start)} ถึง ${formatDateTime(conflict.end)})`);
+          } else {
+            showAlert(`บันทึกไม่สำเร็จ: ${error.message}`);
+          }
+          return;
+        }
+      }
+
+      const booking = state.bookings.find((item) => item.id === id);
+      if (!booking) return;
+
+      if (status === "approved") {
+        const conflict = findConflict(booking.tool, new Date(booking.start), new Date(booking.end), booking.id);
+        if (conflict) {
+          showAlert(`อนุมัติไม่ได้ เพราะเวลาซ้ำกับ ${conflict.requester} (${formatDateTime(conflict.start)} ถึง ${formatDateTime(conflict.end)})`);
+          return;
+        }
+      }
+
+      booking.status = status;
+      if (status === "approved") {
+        sendToolNotification(
+          booking.tool,
+          "staff",
+          "คำขอได้รับอนุมัติ",
+          `${booking.tool} ของ ${booking.requester} ผ่านการอนุมัติแล้ว กรุณาเตรียมเครื่องมือก่อน ${formatDateTime(booking.start)}`
+        );
+      } else {
+        sendToolNotification(
+          booking.tool,
+          "approver",
+          "บันทึกผลไม่อนุมัติแล้ว",
+          `${booking.tool} ของ ${booking.requester} ถูกบันทึกเป็นไม่อนุมัติ และควรแจ้งเหตุผลกลับผู้จอง`
+        );
+      }
+      showAlert("");
+      renderAll();
+    }
+
+    function showAlert(message) {
+      els.alert.textContent = message;
+      els.alert.classList.toggle("show", Boolean(message));
+    }
+
+    function renderAll() {
+      renderCalendar();
+      renderRequests();
+      renderNotifications();
+      renderOperations();
+      renderStaffQueue();
+      updateMetrics();
+      if (currentUser) setAuthUser(currentUser);
+    }
+
+    function setupOptions() {
+      tools.forEach((tool) => {
+        const calendarOption = document.createElement("option");
+        calendarOption.value = tool;
+        calendarOption.textContent = tool;
+        els.calendarTool.appendChild(calendarOption);
+
+        const formOption = document.createElement("option");
+        formOption.value = tool;
+        formOption.textContent = tool;
+        els.toolSelect.appendChild(formOption);
+      });
+
+      els.calendarTool.value = tools[0];
+      els.toolSelect.value = tools[0];
+    }
+
+    function readForm() {
+      return {
+        requester: document.querySelector("#requester").value.trim(),
+        department: document.querySelector("#department").value.trim(),
+        tool: document.querySelector("#toolSelect").value,
+        startDate: document.querySelector("#startDate").value,
+        startTime: document.querySelector("#startTime").value,
+        endDate: document.querySelector("#endDate").value,
+        endTime: document.querySelector("#endTime").value,
+        purpose: document.querySelector("#purpose").value.trim()
+      };
+    }
+
+    els.form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const values = readForm();
+      const range = getRange(values);
+
+      if (range.end <= range.start) {
+        showAlert("กรุณาเลือกเวลาสิ้นสุดให้หลังเวลาเริ่มต้น");
+        return;
+      }
+
+      const conflict = findConflict(values.tool, range.start, range.end);
+      if (conflict) {
+        showAlert(`จองไม่ได้ เพราะเวลาซ้ำกับคำขอของ ${conflict.requester} (${formatDateTime(conflict.start)} ถึง ${formatDateTime(conflict.end)})`);
+        return;
+      }
+
+      if (apiMode) {
+        try {
+          const result = await apiRequest("/api/bookings", {
+            method: "POST",
+            body: JSON.stringify({
+              requester: values.requester,
+              department: values.department,
+              tool: values.tool,
+              start: `${values.startDate}T${values.startTime}`,
+              end: `${values.endDate}T${values.endTime}`,
+              purpose: values.purpose
+            })
+          });
+          applyServerData(result.data);
+          els.calendarTool.value = values.tool;
+          state.visibleDate = new Date(range.start.getFullYear(), range.start.getMonth(), 1);
+          state.selectedDate = range.start;
+          els.form.reset();
+          setDefaultDates();
+          showAlert("");
+          showToast("บันทึกคำขอแล้ว", "คำขอถูกบันทึกลงฐานข้อมูลและส่งแจ้งเตือนแล้ว");
+          document.querySelector("#approval").scrollIntoView({ behavior: "smooth" });
+          return;
+        } catch (error) {
+          if (error.status === 409 && error.payload?.conflict) {
+            const serverConflict = error.payload.conflict;
+            showAlert(`จองไม่ได้ เพราะเวลาซ้ำกับคำขอของ ${serverConflict.requester} (${formatDateTime(serverConflict.start)} ถึง ${formatDateTime(serverConflict.end)})`);
+          } else {
+            showAlert(`บันทึกไม่สำเร็จ: ${error.message}`);
+          }
+          return;
+        }
+      }
+
+      const newBooking = {
+        id: crypto.randomUUID(),
+        requester: values.requester,
+        department: values.department,
+        tool: values.tool,
+        start: `${values.startDate}T${values.startTime}`,
+        end: `${values.endDate}T${values.endTime}`,
+        purpose: values.purpose,
+        status: "pending",
+        staffStatus: "waiting"
+      };
+      state.bookings.push(newBooking);
+      sendToolNotification(
+        newBooking.tool,
+        "approver",
+        "มีคำขอจองใหม่",
+        `${newBooking.requester} ขอใช้ ${newBooking.tool} วันที่ ${formatDateTime(newBooking.start)} กรุณาตรวจสอบเพื่ออนุมัติ`
+      );
+      sendToolNotification(
+        newBooking.tool,
+        "staff",
+        "แจ้งเจ้าหน้าที่ล่วงหน้า",
+        `${newBooking.tool} มีคำขอใหม่ที่รออนุมัติ กรุณาตรวจสอบความพร้อมของเครื่องและอุปกรณ์ประกอบ`
+      );
+
+      els.calendarTool.value = values.tool;
+      state.visibleDate = new Date(range.start.getFullYear(), range.start.getMonth(), 1);
+      state.selectedDate = range.start;
+      els.form.reset();
+      setDefaultDates();
+      showAlert("");
+      renderAll();
+      document.querySelector("#approval").scrollIntoView({ behavior: "smooth" });
+    });
+
+    document.querySelector("#prevMonth").addEventListener("click", () => {
+      state.visibleDate.setMonth(state.visibleDate.getMonth() - 1);
+      renderCalendar();
+    });
+
+    document.querySelector("#nextMonth").addEventListener("click", () => {
+      state.visibleDate.setMonth(state.visibleDate.getMonth() + 1);
+      renderCalendar();
+    });
+
+    document.querySelector("#todayBtn").addEventListener("click", () => {
+      state.visibleDate = new Date(2026, 5, 1);
+      state.selectedDate = new Date(2026, 5, 4);
+      renderCalendar();
+    });
+
+    document.querySelector("#seedBtn").addEventListener("click", async () => {
+      if (apiMode) {
+        try {
+          const result = await apiRequest("/api/seed", { method: "POST" });
+          applyServerData(result.data);
+          showToast("เพิ่มข้อมูลตัวอย่างแล้ว", "ข้อมูลถูกบันทึกลงฐานข้อมูลแล้ว");
+        } catch (error) {
+          if (error.status === 409) {
+            showToast("เพิ่มไม่ได้", "ข้อมูลตัวอย่างชนกับการจองที่มีอยู่แล้ว");
+          } else {
+            showToast("เพิ่มไม่สำเร็จ", error.message);
+          }
+        }
+        return;
+      }
+
+      const sampleBooking = {
+        id: crypto.randomUUID(),
+        requester: "คุณมินตรา",
+        department: "ชีวเคมี",
+        tool: "FTIR Bruker Alpha",
+        start: "2026-06-10T10:00",
+        end: "2026-06-10T11:30",
+        purpose: "ตรวจสเปกตรัมตัวอย่างโปรตีน",
+        status: "pending",
+        staffStatus: "waiting"
+      };
+      state.bookings.push(sampleBooking);
+      sendToolNotification(
+        sampleBooking.tool,
+        "approver",
+        "มีคำขอจองตัวอย่าง",
+        `${sampleBooking.tool} มีคำขอรออนุมัติใหม่ กรุณาตรวจสอบตารางก่อนยืนยัน`
+      );
+      renderAll();
+    });
+
+    document.querySelectorAll("[data-scroll]").forEach((button) => {
+      button.addEventListener("click", () => {
+        document.querySelectorAll(".nav button").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        document.querySelector(`#${button.dataset.scroll}`).scrollIntoView({ behavior: "smooth" });
+      });
+    });
+
+    els.clearNotifications.addEventListener("click", async () => {
+      if (apiMode) {
+        try {
+          const result = await apiRequest("/api/notifications", { method: "DELETE" });
+          applyServerData(result.data);
+          return;
+        } catch (error) {
+          showToast("ล้างแจ้งเตือนไม่สำเร็จ", error.message);
+          return;
+        }
+      }
+
+      state.notifications = [];
+      renderNotifications();
+    });
+
+    els.notifyStaffBtn.addEventListener("click", async () => {
+      if (apiMode) {
+        try {
+          const result = await apiRequest("/api/staff/remind", { method: "POST" });
+          applyServerData(result.data);
+          showToast("ส่งแจ้งเตือนซ้ำแล้ว", "ระบบบันทึกแจ้งเตือนให้เจ้าหน้าที่แล้ว");
+        } catch (error) {
+          showToast("ส่งแจ้งเตือนไม่สำเร็จ", error.message);
+        }
+        return;
+      }
+
+      const pendingStaffJobs = state.bookings.filter((booking) =>
+        booking.status !== "rejected" && booking.staffStatus !== "ready"
+      );
+      if (!pendingStaffJobs.length) {
+        showToast("ไม่มีคิวที่ต้องแจ้งซ้ำ", "ทุกคิวอยู่ในสถานะเตรียมเครื่องแล้วหรือถูกปิดงาน");
+        return;
+      }
+
+      pendingStaffJobs.forEach((booking) => {
+        sendToolNotification(
+          booking.tool,
+          "staff",
+          "แจ้งเตือนเจ้าหน้าที่ซ้ำ",
+          `${booking.tool} ของ ${booking.requester} ยังอยู่ในสถานะ ${staffStatusText(booking.staffStatus)}`
+        );
+      });
+      renderAll();
+    });
+
+    els.loginForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      els.loginAlert.classList.remove("show");
+      try {
+        const result = await apiRequest("/api/login", {
+          method: "POST",
+          body: JSON.stringify({
+            username: els.loginUsername.value.trim(),
+            password: els.loginPassword.value
+          })
+        });
+        els.loginPassword.value = "";
+        setAuthUser(result.user);
+        await loadServerData();
+        showToast("เข้าสู่ระบบแล้ว", `ยินดีต้อนรับ ${result.user.name}`);
+      } catch (error) {
+        els.loginAlert.textContent = "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง";
+        els.loginAlert.classList.add("show");
+      }
+    });
+
+    els.logoutBtn.addEventListener("click", async () => {
+      try {
+        await apiRequest("/api/logout", { method: "POST" });
+      } catch {}
+      users = [];
+      renderUsers();
+      setAuthUser(null);
+      showToast("ออกจากระบบแล้ว", "กรุณาเข้าสู่ระบบก่อนใช้งานต่อ");
+    });
+
+    els.passwordForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      els.passwordAlert.classList.remove("show");
+      if (currentUser?.role !== "admin") {
+        els.passwordAlert.textContent = "เฉพาะผู้ดูแลระบบเท่านั้นที่เปลี่ยนรหัสผ่านได้";
+        els.passwordAlert.classList.add("show");
+        return;
+      }
+      try {
+        const username = encodeURIComponent(els.passwordUser.value);
+        const result = await apiRequest(`/api/users/${username}/password`, {
+          method: "PATCH",
+          body: JSON.stringify({ password: els.newPassword.value })
+        });
+        users = result.users || users;
+        els.newPassword.value = "";
+        renderUsers();
+        showToast("เปลี่ยนรหัสผ่านแล้ว", `บัญชี ${result.user.username} ถูกอัปเดตแล้ว`);
+      } catch (error) {
+        els.passwordAlert.textContent = error.status === 400
+          ? "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร"
+          : `เปลี่ยนรหัสผ่านไม่สำเร็จ: ${error.message}`;
+        els.passwordAlert.classList.add("show");
+      }
+    });
+
+    els.calendarTool.addEventListener("change", renderCalendar);
+    els.statusFilter.addEventListener("change", renderCalendar);
+
+    function setDefaultDates() {
+      const selected = toDateInput(state.selectedDate);
+      document.querySelector("#startDate").value = selected;
+      document.querySelector("#endDate").value = selected;
+      document.querySelector("#startTime").value = "09:00";
+      document.querySelector("#endTime").value = "10:00";
+    }
+
+    setupOptions();
+    setDefaultDates();
+    renderAll();
+    checkSession();
+  </script>
+</body>
+</html>

@@ -1,0 +1,182 @@
+{
+  "tools": [
+    "HPLC Agilent 1260",
+    "GC-MS Shimadzu QP2020",
+    "SEM JEOL JSM-IT200",
+    "FTIR Bruker Alpha"
+  ],
+  "bookings": [
+    {
+      "id": "8a97b6fe-079f-41ef-a460-7be26674ee33",
+      "requester": "ดร.กานต์",
+      "department": "วัสดุศาสตร์",
+      "tool": "SEM JEOL JSM-IT200",
+      "start": "2026-06-06T09:00",
+      "end": "2026-06-06T12:00",
+      "purpose": "ตรวจภาพพื้นผิวตัวอย่างโพลิเมอร์",
+      "status": "approved",
+      "staffStatus": "issue"
+    },
+    {
+      "id": "b35ac796-2937-4b0d-9e15-ede3f21bae26",
+      "requester": "คุณภัทร",
+      "department": "เคมีวิเคราะห์",
+      "tool": "HPLC Agilent 1260",
+      "start": "2026-06-07T13:00",
+      "end": "2026-06-07T16:30",
+      "purpose": "วิเคราะห์สารมาตรฐานในตัวอย่างน้ำ",
+      "status": "rejected",
+      "staffStatus": "waiting"
+    },
+    {
+      "id": "a671c22b-a025-4205-9929-a7ac40a12c30",
+      "requester": "ทดสอบซ้ำ",
+      "department": "QA",
+      "tool": "GC-MS Shimadzu QP2020",
+      "start": "2026-06-12T09:30",
+      "end": "2026-06-12T10:30",
+      "purpose": "ทดสอบเวลาซ้ำ",
+      "status": "rejected",
+      "staffStatus": "waiting"
+    },
+    {
+      "id": "a19c4396-d560-4d25-b562-c880517332c2",
+      "requester": "นายเอ ใจดี",
+      "department": "เคมี",
+      "tool": "GC-MS Shimadzu QP2020",
+      "start": "2026-06-23T09:00",
+      "end": "2026-06-23T12:00",
+      "purpose": "วิจัย",
+      "status": "approved",
+      "staffStatus": "calibrate"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "7307948a-677c-4a6d-948f-753936ce5f27",
+      "audience": "staff",
+      "title": "อัปเดตสถานะเจ้าหน้าที่",
+      "message": "GC-MS Shimadzu QP2020 ของ นายเอ ใจดี: calibrate · ส่งถึง เจ้าหน้าที่มวลสาร ผ่าน Email, Microsoft Teams",
+      "time": "5/6/2569 14:03:12",
+      "read": false
+    },
+    {
+      "id": "6dd10751-3d80-4eab-828d-9c12f2497c9b",
+      "audience": "approver",
+      "title": "อัปเดตสถานะเจ้าหน้าที่",
+      "message": "SEM JEOL JSM-IT200 ของ ดร.กานต์: issue · ส่งถึง ผู้จัดการห้องปฏิบัติการวัสดุ ผ่าน Email, LINE",
+      "time": "5/6/2569 14:03:09",
+      "read": false
+    },
+    {
+      "id": "837a656a-1599-44ec-a819-5c7ad505ee31",
+      "audience": "staff",
+      "title": "คำขอได้รับอนุมัติ",
+      "message": "GC-MS Shimadzu QP2020 ของ นายเอ ใจดี ผ่านการอนุมัติแล้ว · ส่งถึง เจ้าหน้าที่มวลสาร ผ่าน Email, Microsoft Teams",
+      "time": "5/6/2569 14:02:16",
+      "read": false
+    },
+    {
+      "id": "ea3416cd-7446-4193-9295-20170d0375f3",
+      "audience": "staff",
+      "title": "แจ้งเจ้าหน้าที่ล่วงหน้า",
+      "message": "GC-MS Shimadzu QP2020 มีคำขอใหม่ที่รออนุมัติ · ส่งถึง เจ้าหน้าที่มวลสาร ผ่าน Email, Microsoft Teams",
+      "time": "5/6/2569 13:58:09",
+      "read": false
+    },
+    {
+      "id": "db5e5cff-19db-4bb2-9b96-71257f25c1fd",
+      "audience": "approver",
+      "title": "มีคำขอจองใหม่",
+      "message": "นายเอ ใจดี ขอใช้ GC-MS Shimadzu QP2020 · ส่งถึง หัวหน้าศูนย์เครื่องมือ ผ่าน Email, Microsoft Teams",
+      "time": "5/6/2569 13:58:09",
+      "read": false
+    },
+    {
+      "id": "f04c9e67-8b7a-474f-903d-fca100fb6782",
+      "audience": "approver",
+      "title": "บันทึกผลไม่อนุมัติแล้ว",
+      "message": "GC-MS Shimadzu QP2020 ของ ทดสอบซ้ำ ถูกบันทึกเป็นไม่อนุมัติ · ส่งถึง หัวหน้าศูนย์เครื่องมือ ผ่าน Email, Microsoft Teams",
+      "time": "5/6/2569 13:18:24",
+      "read": false
+    },
+    {
+      "id": "dc1e6515-7809-4489-8cad-8d4c1c996beb",
+      "audience": "approver",
+      "title": "บันทึกผลไม่อนุมัติแล้ว",
+      "message": "HPLC Agilent 1260 ของ คุณภัทร ถูกบันทึกเป็นไม่อนุมัติ · ส่งถึง รองคณบดีฝ่ายวิจัย ผ่าน Email, LINE, Microsoft Teams",
+      "time": "5/6/2569 13:18:23",
+      "read": false
+    },
+    {
+      "id": "47b2c309-776f-4196-8017-bff12785cd08",
+      "audience": "staff",
+      "title": "แจ้งเจ้าหน้าที่ล่วงหน้า",
+      "message": "GC-MS Shimadzu QP2020 มีคำขอใหม่ที่รออนุมัติ · ส่งถึง เจ้าหน้าที่มวลสาร ผ่าน Email, Microsoft Teams",
+      "time": "5/6/2569 11:00:26",
+      "read": false
+    },
+    {
+      "id": "e7bd4a54-19ac-41fe-a730-88470002a7ca",
+      "audience": "approver",
+      "title": "มีคำขอจองใหม่",
+      "message": "ทดสอบซ้ำ ขอใช้ GC-MS Shimadzu QP2020 · ส่งถึง หัวหน้าศูนย์เครื่องมือ ผ่าน Email, Microsoft Teams",
+      "time": "5/6/2569 11:00:26",
+      "read": false
+    },
+    {
+      "id": "a0c33370-d7db-4cfc-8a3d-3173cfbaad7f",
+      "audience": "staff",
+      "title": "แจ้งเจ้าหน้าที่ล่วงหน้า",
+      "message": "GC-MS Shimadzu QP2020 มีคำขอใหม่ที่รออนุมัติ · ส่งถึง เจ้าหน้าที่มวลสาร ผ่าน Email, Microsoft Teams",
+      "time": "5/6/2569 11:00:03",
+      "read": false
+    },
+    {
+      "id": "e83624ee-3491-427a-8490-02d6e1380db3",
+      "audience": "approver",
+      "title": "มีคำขอรออนุมัติ",
+      "message": "HPLC Agilent 1260 มีคำขอใช้งานใหม่ที่ต้องตรวจสอบช่วงเวลาและวัตถุประสงค์",
+      "time": "เริ่มต้นระบบ",
+      "read": false
+    },
+    {
+      "id": "6ac3f6a1-97af-41ae-9c87-c416dde415c7",
+      "audience": "staff",
+      "title": "เตรียมเครื่องมือ",
+      "message": "SEM JEOL JSM-IT200 ได้รับอนุมัติแล้ว เจ้าหน้าที่สามารถตรวจสอบความพร้อมก่อนใช้งาน",
+      "time": "เริ่มต้นระบบ",
+      "read": false
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "role": "admin",
+      "name": "ผู้ดูแลระบบ",
+      "salt": "3cf74d9534e7021112615aa97773b144",
+      "hash": "c7622c3d00d418d81208f09b79ca88ba919b72fc44f1ee9b318368fed99329ab"
+    },
+    {
+      "username": "approver",
+      "role": "approver",
+      "name": "ผู้มีสิทธิอนุมัติ",
+      "salt": "65120f8be02fa93d710947675576e99a",
+      "hash": "11425cfd798de9802e94f8ddf23ff684754bfa0cff0942e761739e65d6b04290"
+    },
+    {
+      "username": "staff",
+      "role": "staff",
+      "name": "เจ้าหน้าที่เครื่องมือ",
+      "salt": "13406476a5639e2b1556bbc435546695",
+      "hash": "3d740245891232be06da36287eba51105bfa20a8b2870fdc9b1f3737afee726b"
+    },
+    {
+      "username": "requester",
+      "role": "requester",
+      "name": "ผู้จอง",
+      "salt": "e388cbde3a793a08e0caa358dc49ca12",
+      "hash": "a6f961b3038fb5d6504fa5c6d3cd5ee68ff3a53a3d905165f5e57d5af1a6b848"
+    }
+  ]
+}

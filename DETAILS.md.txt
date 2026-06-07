@@ -1,0 +1,33 @@
+### โปรเจคนี้คืออะไร?
+**LabReserve** — ระบบจองเครื่องมือวิทยาศาสตร์แบบ Full-stack สำหรับห้องปฏิบัติการวิจัย ทำงานโดยใช้ **Node.js pure (zero dependency)** + **Vanilla JS SPA frontend**
+
+### สถาปัตยกรรม
+- **Backend**: Node.js HTTP server (ไม่มี Express/Framework) — REST API 13 endpoints
+- **Frontend**: Single-page Application HTML+CSS+JS (CSR) — responsive design
+- **Authentication**: Cookie-based session (HttpOnly) + PBKDF2 (120k rounds) hashing
+- **Database**: JSON file (`labreserve-db.json`)
+- **Deployment**: Docker (node:22-alpine), พร้อม deploy guide
+
+### 4 บทบาทผู้ใช้
+| บทบาท | หน้าที่ |
+|---|---|
+| admin | จัดการระบบและผู้ใช้ |
+| approver | อนุมัติ/ปฏิเสธคำขอจอง |
+| staff | ตรวจสอบและอัปเดตสถานะเครื่องมือ |
+| requester | ส่งคำขอจองเครื่องมือ |
+
+### 4 เครื่องมือวิทยาศาสตร์
+HPLC Agilent 1260, GC-MS Shimadzu QP2020, SEM JEOL JSM-IT200, FTIR Bruker Alpha
+
+### จุดเด่น
+- Zero dependency — deploy ได้ทันที
+- Conflict detection ป้องกัน double-booking
+- RBAC ชัดเจนครอบคลุม workflow จริง
+- UI ภาษาไทย Responsive
+
+### จุดอ่อนที่ควรปรับปรุง
+1. JSON DB ไม่ปลอดภัยสำหรับ concurrent access → ควร migrate เป็น SQLite/PostgreSQL
+2. Session ใน memory หายเมื่อ restart → ควรใช้ persistent session store
+3. Notification เป็น simulation ยังไม่ส่ง Email/LINE/Teams จริง
+4. ไม่มี audit log, rate limiting, CSRF protection
+5. ไม่มี automated tests
