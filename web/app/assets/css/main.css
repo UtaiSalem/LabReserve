@@ -1,0 +1,62 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme static {
+  --font-sans: 'Sarabun', 'Public Sans', sans-serif;
+
+  /* SKRU Navy — สถาบันพระมหากษัตริย์ */
+  --color-skru-50: #EFF4FB;
+  --color-skru-100: #DBE5F5;
+  --color-skru-200: #B7CBEB;
+  --color-skru-300: #8AAADC;
+  --color-skru-400: #5C85C9;
+  --color-skru-500: #3B65B5;
+  --color-skru-600: #2A4F9C;
+  --color-skru-700: #233F7E;
+  --color-skru-800: #1E3A8A;
+  --color-skru-900: #172554;
+  --color-skru-950: #0E1736;
+
+  /* SKRU Green — ธรรมชาติ/แหล่งที่ตั้ง */
+  --color-forest-50: #F0FDF4;
+  --color-forest-100: #DCFCE7;
+  --color-forest-200: #BBF7D0;
+  --color-forest-300: #86EFAC;
+  --color-forest-400: #4ADE80;
+  --color-forest-500: #22C55E;
+  --color-forest-600: #16A34A;
+  --color-forest-700: #15803D;
+  --color-forest-800: #166534;
+  --color-forest-900: #14532D;
+  --color-forest-950: #052E1C;
+
+  /* SKRU Gold — ภูมิปัญญา */
+  --color-gold-50: #FEFCE8;
+  --color-gold-100: #FEF9C3;
+  --color-gold-200: #FEF08A;
+  --color-gold-300: #FDE047;
+  --color-gold-400: #FACC15;
+  --color-gold-500: #EAB308;
+  --color-gold-600: #CA8A04;
+  --color-gold-700: #A16207;
+  --color-gold-800: #854D0E;
+  --color-gold-900: #713F12;
+  --color-gold-950: #422006;
+
+  /* SKRU Orange — ศิลปวัฒนธรรม (accent only) */
+  --color-sunset-50: #FFF7ED;
+  --color-sunset-100: #FFEDD5;
+  --color-sunset-200: #FED7AA;
+  --color-sunset-300: #FDBA74;
+  --color-sunset-400: #FB923C;
+  --color-sunset-500: #F97316;
+  --color-sunset-600: #EA580C;
+  --color-sunset-700: #C2410C;
+  --color-sunset-800: #9A3412;
+  --color-sunset-900: #7C2D12;
+  --color-sunset-950: #431407;
+}
+
+html {
+  font-family: var(--font-sans);
+}
