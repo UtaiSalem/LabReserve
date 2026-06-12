@@ -1,0 +1,14 @@
+# Netlify deploys only the Nuxt frontend in web/.
+# The backend (outputs/) is deployed separately — see README.md and outputs/DEPLOYMENT.md.
+
+[build]
+  base = "web"
+  command = "pnpm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Required environment variable (set in Netlify UI → Site settings → Environment variables):
+#   NUXT_LEGACY_API_BASE = https://<your-backend-host>
+# Without it the server proxy falls back to http://localhost:8775 and API calls will fail.

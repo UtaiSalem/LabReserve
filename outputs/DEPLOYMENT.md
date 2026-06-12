@@ -1,6 +1,8 @@
 # LabReserve Deployment
 
-LabReserve is a zero-dependency Node.js app with a JSON data file. It can be deployed without adding paid services if you run it on an existing computer/server, or on a cloud plan that is explicitly Always Free. The safest no-cost path is an existing lab PC/server plus HTTPS in front of it.
+LabReserve's backend is a Node.js app that stores data in a SQLite file (`labreserve.db`, migrated automatically from the legacy `labreserve-db.json` if present). It can be deployed without adding paid services if you run it on an existing computer/server, or on a cloud plan that is explicitly Always Free. The safest no-cost path is an existing lab PC/server plus HTTPS in front of it.
+
+> Deploying the Nuxt frontend (`web/`) on Netlify? Deploy this backend with any option below, then point Netlify's `NUXT_LEGACY_API_BASE` at it — see the root [README.md](../README.md).
 
 ## Production Settings
 
@@ -10,7 +12,7 @@ Set these environment variables before public use:
 | --- | --- | --- | --- |
 | `PORT` | `8775` | No | HTTP port for the Node server |
 | `HOST` | `0.0.0.0` | No | Bind address |
-| `DATA_DIR` | `/data` | Yes | Persistent folder for `labreserve-db.json` |
+| `DATA_DIR` | `/data` | Yes | Persistent folder for `labreserve.db` (SQLite) |
 | `SESSION_SECRET` | random 64 hex chars | Yes | Signs login cookies and keeps sessions valid after restart |
 | `APP_ORIGIN` | `https://labreserve.example.com` | Yes when public | Allows the public HTTPS origin |
 | `SECURE_COOKIES` | `true` | Yes behind HTTPS | Adds the `Secure` flag to login cookies |
@@ -101,6 +103,29 @@ node server.js
 
 Use HTTPS before opening the service to real users.
 
+## Option D: Render or Railway (Paid Persistent Disk)
+
+These platforms make the backend reachable on a public HTTPS URL with no server administration, which pairs well with the Netlify frontend. The free tiers have ephemeral filesystems — you must attach a persistent disk/volume (paid) or your data is wiped on every deploy and idle spin-down.
+
+Render (Web Service):
+
+1. New → Web Service → connect this repo, set **Root Directory** to `outputs`.
+2. Build command: `npm install` — Start command: `node server.js`.
+3. Add a **Persistent Disk** (e.g. 1 GB) mounted at `/data`.
+4. Environment variables:
+
+```text
+NODE_ENV=production
+DATA_DIR=/data
+SESSION_SECRET=<generated secret>
+APP_ORIGIN=https://<your-netlify-site>.netlify.app
+SECURE_COOKIES=true
+```
+
+Railway is the same idea: deploy from the repo with root directory `outputs`, attach a **Volume** mounted at `/data`, and set the same variables.
+
+After the first deploy, verify `https://<backend-url>/health` returns `{ "ok": true }`, then set `NUXT_LEGACY_API_BASE=https://<backend-url>` on the Netlify site.
+
 ## Avoid for Real Data
 
 Free app platforms with ephemeral filesystems are fine for demos, but not for this app's production data unless you also add durable storage. In particular, do not rely on a free web service whose local files are deleted on restart, redeploy, or idle spin-down.
@@ -110,11 +135,11 @@ Free app platforms with ephemeral filesystems are fine for demos, but not for th
 - Change every default password before public release.
 - Set `SESSION_SECRET`, `DATA_DIR`, `APP_ORIGIN`, and `SECURE_COOKIES=true`.
 - Run behind HTTPS.
-- Keep `labreserve-db.json` in a persistent folder or volume.
-- Back up `labreserve-db.json` every day.
+- Keep `labreserve.db` in a persistent folder or volume (`DATA_DIR`).
+- Back up `labreserve.db` every day.
 - Restrict OS/server access to administrators only.
 - Test login, booking creation, approval, staff status updates, and logout after deployment.
-- For heavy concurrent usage, migrate JSON storage to SQLite or PostgreSQL later.
+- For very heavy concurrent usage, consider migrating from SQLite to PostgreSQL later.
 
 ## Default Test Accounts
 
