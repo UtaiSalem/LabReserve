@@ -42,7 +42,31 @@ Use the connection mode that matches your backend host:
 Reference:
 - [Supabase: Connect to Postgres](https://supabase.com/docs/guides/database/connecting-to-postgres)
 
-## Option A: Existing Windows PC or Server
+## Local development
+
+The server auto-loads `outputs/.env` on startup if the file exists, so the quickest path is:
+
+```powershell
+cd C:\Users\Administrator\Documents\LabReserve\outputs
+copy .env.example .env
+notepad .env   # fill in DATABASE_URL, SESSION_SECRET, etc.
+npm start
+```
+
+`.env` is gitignored. For local dev against Supabase, use:
+
+```text
+DATABASE_URL=postgresql://postgres.[project-ref]:PASSWORD@aws-[region].pooler.supabase.com:5432/postgres
+DATABASE_SSL=true
+SESSION_SECRET=<64 hex chars>
+APP_ORIGIN=http://localhost:3000
+ALLOWED_ORIGINS=http://localhost:3000
+SECURE_COOKIES=false
+```
+
+## Option A: Existing Windows PC or Server (inline env vars)
+
+If you'd rather not use a `.env` file:
 
 ```powershell
 cd C:\Users\Administrator\Documents\LabReserve\outputs
