@@ -187,15 +187,15 @@ git push -u origin main
 
    (Use the URL from step 4.6, no trailing slash.)
 
-5. Deploy. Once live, copy the Netlify site URL — for example `https://labreserve.netlify.app`.
+5. Deploy. Once live, copy the Netlify site URL — for example `https://rsulabreserve.netlify.app`.
 
 ### 6. Wire CORS back to Render
 
 Go back to the Render service → `Environment`, fill in the two values you skipped:
 
 ```text
-APP_ORIGIN=https://labreserve.netlify.app
-ALLOWED_ORIGINS=https://labreserve.netlify.app
+APP_ORIGIN=https://rsulabreserve.netlify.app
+ALLOWED_ORIGINS=https://rsulabreserve.netlify.app
 ```
 
 Save → Render redeploys automatically.

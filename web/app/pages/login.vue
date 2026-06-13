@@ -34,9 +34,11 @@ async function onSubmit() {
       errorMsg.value = 'พยายามเข้าระบบบ่อยเกินไป กรุณารอสักครู่'
     } else if (e?.status === 401) {
       errorMsg.value = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'
+    } else if (e?.status === 502 || e?.status === 503 || e?.status === 504) {
+      errorMsg.value = 'เซิร์ฟเวอร์กำลังตื่นจากโหมดประหยัดพลังงาน รอประมาณ 30 วินาทีแล้วลองอีกครั้ง'
     } else {
       const raw = e?.data?.error
-      errorMsg.value = typeof raw === 'string' && raw ? raw : 'เกิดข้อผิดพลาด กรุณาลองใหม่ (ตรวจสอบว่า backend รันอยู่ที่ port 8775)'
+      errorMsg.value = typeof raw === 'string' && raw ? raw : 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'
     }
   } finally {
     loading.value = false
