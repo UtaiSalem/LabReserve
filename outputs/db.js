@@ -1,7 +1,8 @@
 const fs = require("node:fs");
-const path = require("node:path");
 const crypto = require("node:crypto");
-const Database = require("better-sqlite3");
+const pg = require("pg");
+
+const { Pool } = pg;
 
 function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
   const hash = crypto.pbkdf2Sync(password, salt, 120000, 32, "sha256").toString("hex");
@@ -20,10 +21,10 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT NOT NULL,
   email TEXT,
   department TEXT,
-  active INTEGER NOT NULL DEFAULT 1,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
   salt TEXT NOT NULL,
   hash TEXT NOT NULL,
-  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+  created_at BIGINT NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW())::BIGINT)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE email IS NOT NULL;
 
@@ -39,10 +40,10 @@ CREATE TABLE IF NOT EXISTS approval_tokens (
   approver_username TEXT NOT NULL,
   token_hash TEXT NOT NULL UNIQUE,
   action TEXT NOT NULL,
-  expires_at INTEGER NOT NULL,
-  used_at INTEGER,
+  expires_at BIGINT NOT NULL,
+  used_at BIGINT,
   used_by TEXT,
-  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+  created_at BIGINT NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW())::BIGINT)
 );
 CREATE INDEX IF NOT EXISTS idx_tokens_booking ON approval_tokens(booking_id);
 
@@ -52,12 +53,13 @@ CREATE TABLE IF NOT EXISTS bookings (
   department TEXT NOT NULL,
   tool TEXT NOT NULL,
   start TEXT NOT NULL,
-  end TEXT NOT NULL,
+  "end" TEXT NOT NULL,
   purpose TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending',
-  staffStatus TEXT NOT NULL DEFAULT 'waiting',
+  "staffStatus" TEXT NOT NULL DEFAULT 'waiting',
   created_by TEXT,
-  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+  rejection_reason TEXT,
+  created_at BIGINT NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW())::BIGINT)
 );
 CREATE INDEX IF NOT EXISTS idx_bookings_tool_start ON bookings(tool, start);
 
@@ -68,12 +70,12 @@ CREATE TABLE IF NOT EXISTS notifications (
   title TEXT NOT NULL,
   message TEXT NOT NULL,
   time TEXT NOT NULL,
-  read INTEGER NOT NULL DEFAULT 0,
+  read BOOLEAN NOT NULL DEFAULT FALSE,
   category TEXT,
   related_type TEXT,
   related_id TEXT,
   severity TEXT NOT NULL DEFAULT 'info',
-  created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
+  created_at BIGINT NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW())::BIGINT)
 );
 CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_user);
@@ -82,13 +84,13 @@ CREATE INDEX IF NOT EXISTS idx_notifications_audience ON notifications(audience)
 CREATE TABLE IF NOT EXISTS notification_reads (
   notification_id TEXT NOT NULL,
   username TEXT NOT NULL,
-  read_at INTEGER NOT NULL DEFAULT (strftime('%s','now')),
+  read_at BIGINT NOT NULL DEFAULT (EXTRACT(EPOCH FROM NOW())::BIGINT),
   PRIMARY KEY (notification_id, username)
 );
 
 CREATE TABLE IF NOT EXISTS audit_log (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  ts INTEGER NOT NULL,
+  id BIGSERIAL PRIMARY KEY,
+  ts BIGINT NOT NULL,
   actor TEXT,
   role TEXT,
   ip TEXT,
@@ -101,10 +103,10 @@ CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit_log(ts DESC);
 `;
 
 const DEFAULT_USERS = [
-  ["admin", "admin1234", "admin", "ผู้ดูแลระบบ", "admin@labreserve.local"],
-  ["approver", "approve1234", "approver", "ผู้มีสิทธิอนุมัติ", "approver@labreserve.local"],
-  ["staff", "staff1234", "staff", "เจ้าหน้าที่เครื่องมือ", "staff@labreserve.local"],
-  ["requester", "request1234", "requester", "ผู้จอง", "requester@labreserve.local"]
+  ["admin", "admin1234", "admin", "เธเธนเนเธ”เธนเนเธฅเธฃเธฐเธเธ", "admin@labreserve.local"],
+  ["approver", "approve1234", "approver", "เธเธนเนเธกเธตเธชเธดเธ—เธเธดเธญเธเธธเธกเธฑเธ•เธด", "approver@labreserve.local"],
+  ["staff", "staff1234", "staff", "เน€เธเนเธฒเธซเธเนเธฒเธ—เธตเนเน€เธเธฃเธทเนเธญเธเธกเธทเธญ", "staff@labreserve.local"],
+  ["requester", "request1234", "requester", "เธเธนเนเธเธญเธ", "requester@labreserve.local"]
 ];
 
 const DEFAULT_TOOLS = [
@@ -116,22 +118,22 @@ const DEFAULT_TOOLS = [
 
 const DEFAULT_BOOKINGS = [
   {
-    requester: "ดร.กานต์",
-    department: "วัสดุศาสตร์",
+    requester: "เธ”เธฃ.เธเธฒเธเธ•เน",
+    department: "เธงเธฑเธชเธ”เธธเธจเธฒเธชเธ•เธฃเน",
     tool: "SEM JEOL JSM-IT200",
     start: "2026-06-06T09:00",
     end: "2026-06-06T12:00",
-    purpose: "ตรวจภาพพื้นผิวตัวอย่างโพลิเมอร์",
+    purpose: "เธ•เธฃเธงเธเธ เธฒเธเธเธทเนเธเธเธดเธงเธ•เธฑเธงเธญเธขเนเธฒเธเนเธเธฅเธดเน€เธกเธญเธฃเน",
     status: "approved",
     staffStatus: "ready"
   },
   {
-    requester: "คุณภัทร",
-    department: "เคมีวิเคราะห์",
+    requester: "เธเธธเธ“เธ เธฑเธ—เธฃ",
+    department: "เน€เธเธกเธตเธงเธดเน€เธเธฃเธฒเธฐเธซเน",
     tool: "HPLC Agilent 1260",
     start: "2026-06-07T13:00",
     end: "2026-06-07T16:30",
-    purpose: "วิเคราะห์สารมาตรฐานในตัวอย่างน้ำ",
+    purpose: "เธงเธดเน€เธเธฃเธฒเธฐเธซเนเธชเธฒเธฃเธกเธฒเธ•เธฃเธเธฒเธเนเธเธ•เธฑเธงเธญเธขเนเธฒเธเธเนเธณ",
     status: "pending",
     staffStatus: "waiting"
   }
@@ -140,160 +142,181 @@ const DEFAULT_BOOKINGS = [
 const DEFAULT_NOTIFICATIONS = [
   {
     audience: "approver",
-    title: "มีคำขอรออนุมัติ",
-    message: "HPLC Agilent 1260 มีคำขอใช้งานใหม่ที่ต้องตรวจสอบช่วงเวลาและวัตถุประสงค์",
-    time: "เริ่มต้นระบบ"
+    title: "เธกเธตเธเธณเธเธญเธฃเธญเธญเธเธธเธกเธฑเธ•เธด",
+    message: "HPLC Agilent 1260 เธกเธตเธเธณเธเธญเนเธเนเธเธฒเธเนเธซเธกเนเธ—เธตเนเธ•เนเธญเธเธ•เธฃเธงเธเธชเธญเธเธเนเธงเธเน€เธงเธฅเธฒเนเธฅเธฐเธงเธฑเธ•เธ–เธธเธเธฃเธฐเธชเธเธเน",
+    time: "เน€เธฃเธดเนเธกเธ•เนเธเธฃเธฐเธเธ"
   },
   {
     audience: "staff",
-    title: "เตรียมเครื่องมือ",
-    message: "SEM JEOL JSM-IT200 ได้รับอนุมัติแล้ว เจ้าหน้าที่สามารถตรวจสอบความพร้อมก่อนใช้งาน",
-    time: "เริ่มต้นระบบ"
+    title: "เน€เธ•เธฃเธตเธขเธกเน€เธเธฃเธทเนเธญเธเธกเธทเธญ",
+    message: "SEM JEOL JSM-IT200 เนเธ”เนเธฃเธฑเธเธญเธเธธเธกเธฑเธ•เธดเนเธฅเนเธง เน€เธเนเธฒเธซเธเนเธฒเธ—เธตเนเธชเธฒเธกเธฒเธฃเธ–เธ•เธฃเธงเธเธชเธญเธเธเธงเธฒเธกเธเธฃเนเธญเธกเธเนเธญเธเนเธเนเธเธฒเธ",
+    time: "เน€เธฃเธดเนเธกเธ•เนเธเธฃเธฐเธเธ"
   }
 ];
 
-function migrateNotifications(db) {
-  const cols = new Set(db.prepare("PRAGMA table_info(notifications)").all().map((c) => c.name));
-  const adds = [
-    ["recipient_user", "TEXT"],
-    ["category", "TEXT"],
-    ["related_type", "TEXT"],
-    ["related_id", "TEXT"],
-    ["severity", "TEXT NOT NULL DEFAULT 'info'"]
-  ];
-  for (const [name, decl] of adds) {
-    if (!cols.has(name)) db.exec(`ALTER TABLE notifications ADD COLUMN ${name} ${decl}`);
+function databaseUrl() {
+  return process.env.DATABASE_URL || process.env.SUPABASE_DB_URL || "";
+}
+
+function createPool() {
+  const connectionString = databaseUrl();
+  if (!connectionString) {
+    throw new Error("DATABASE_URL or SUPABASE_DB_URL is required for the backend database connection.");
   }
-  const audienceInfo = db.prepare("PRAGMA table_info(notifications)").all().find((c) => c.name === "audience");
-  if (audienceInfo && audienceInfo.notnull === 1) {
-    db.exec(`
-      CREATE TABLE notifications_new (
-        id TEXT PRIMARY KEY, audience TEXT, recipient_user TEXT,
-        title TEXT NOT NULL, message TEXT NOT NULL, time TEXT NOT NULL,
-        read INTEGER NOT NULL DEFAULT 0, category TEXT, related_type TEXT,
-        related_id TEXT, severity TEXT NOT NULL DEFAULT 'info',
-        created_at INTEGER NOT NULL DEFAULT (strftime('%s','now'))
-      );
-      INSERT INTO notifications_new SELECT id, audience, recipient_user, title, message, time, read, category, related_type, related_id, severity, created_at FROM notifications;
-      DROP TABLE notifications;
-      ALTER TABLE notifications_new RENAME TO notifications;
-      CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
-      CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_user);
-      CREATE INDEX IF NOT EXISTS idx_notifications_audience ON notifications(audience);
-    `);
+
+  const disableSsl = process.env.DATABASE_SSL === "false" || process.env.PGSSLMODE === "disable";
+  return new Pool({
+    connectionString,
+    ssl: disableSsl ? false : { rejectUnauthorized: false }
+  });
+}
+
+async function runSchema(pool) {
+  await pool.query(SCHEMA);
+}
+
+async function withTransaction(pool, fn) {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await fn(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
   }
 }
 
-function openDb(dbPath) {
-  fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-  const db = new Database(dbPath);
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
-  db.exec(SCHEMA);
-  migrateNotifications(db);
-  migrateBookings(db);
-  migrateUsers(db);
-  return db;
-}
-
-function migrateBookings(db) {
-  const cols = new Set(db.prepare("PRAGMA table_info(bookings)").all().map((c) => c.name));
-  if (!cols.has("created_by")) db.exec("ALTER TABLE bookings ADD COLUMN created_by TEXT");
-  if (!cols.has("rejection_reason")) db.exec("ALTER TABLE bookings ADD COLUMN rejection_reason TEXT");
-}
-
-function migrateUsers(db) {
-  const cols = new Set(db.prepare("PRAGMA table_info(users)").all().map((c) => c.name));
-  if (!cols.has("email")) db.exec("ALTER TABLE users ADD COLUMN email TEXT");
-  if (!cols.has("department")) db.exec("ALTER TABLE users ADD COLUMN department TEXT");
-  if (!cols.has("active")) db.exec("ALTER TABLE users ADD COLUMN active INTEGER NOT NULL DEFAULT 1");
-}
-
-function seedIfEmpty(db, jsonPath) {
-  const count = db.prepare("SELECT COUNT(*) AS n FROM users").get().n;
-  if (count > 0) return { seeded: false };
+async function seedIfEmpty(pool, jsonPath) {
+  const { rows } = await pool.query("SELECT COUNT(*)::int AS n FROM users");
+  if (rows[0]?.n > 0) return { seeded: false };
 
   if (jsonPath && fs.existsSync(jsonPath)) {
     try {
       const raw = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
-      importFromJson(db, raw);
+      await importFromJson(pool, raw);
       return { seeded: true, source: "json" };
     } catch (error) {
       console.warn("Failed to import JSON, falling back to defaults:", error.message);
     }
   }
 
-  seedDefaults(db);
+  await seedDefaults(pool);
   return { seeded: true, source: "defaults" };
 }
 
-function seedDefaults(db) {
-  const insertUser = db.prepare(
-    "INSERT INTO users (username, role, name, email, salt, hash) VALUES (?, ?, ?, ?, ?, ?)"
-  );
-  const insertBooking = db.prepare(
-    "INSERT INTO bookings (id, requester, department, tool, start, end, purpose, status, staffStatus) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
-  );
-  const insertNotification = db.prepare(
-    "INSERT INTO notifications (id, audience, title, message, time, read) VALUES (?, ?, ?, ?, ?, 0)"
-  );
-  const insertToolApprover = db.prepare(
-    "INSERT OR IGNORE INTO tool_approvers (tool, approver_username) VALUES (?, ?)"
-  );
-
-  const tx = db.transaction(() => {
+async function seedDefaults(pool) {
+  await withTransaction(pool, async (client) => {
     for (const [username, password, role, name, email] of DEFAULT_USERS) {
       const { salt, hash } = hashPassword(password);
-      insertUser.run(username, role, name, email, salt, hash);
+      await client.query(
+        "INSERT INTO users (username, role, name, email, salt, hash) VALUES ($1, $2, $3, $4, $5, $6)",
+        [username, role, name, email, salt, hash]
+      );
     }
+
     for (const tool of DEFAULT_TOOLS) {
-      insertToolApprover.run(tool, "approver");
+      await client.query(
+        "INSERT INTO tool_approvers (tool, approver_username) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        [tool, "approver"]
+      );
     }
-    for (const b of DEFAULT_BOOKINGS) {
-      insertBooking.run(crypto.randomUUID(), b.requester, b.department, b.tool, b.start, b.end, b.purpose, b.status, b.staffStatus);
+
+    for (const booking of DEFAULT_BOOKINGS) {
+      await client.query(
+        'INSERT INTO bookings (id, requester, department, tool, start, "end", purpose, status, "staffStatus") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+        [crypto.randomUUID(), booking.requester, booking.department, booking.tool, booking.start, booking.end, booking.purpose, booking.status, booking.staffStatus]
+      );
     }
-    for (const n of DEFAULT_NOTIFICATIONS) {
-      insertNotification.run(crypto.randomUUID(), n.audience, n.title, n.message, n.time);
+
+    for (const notification of DEFAULT_NOTIFICATIONS) {
+      await client.query(
+        "INSERT INTO notifications (id, audience, title, message, time, read) VALUES ($1, $2, $3, $4, $5, FALSE)",
+        [crypto.randomUUID(), notification.audience, notification.title, notification.message, notification.time]
+      );
     }
   });
-  tx();
 }
 
-function importFromJson(db, raw) {
-  const insertUser = db.prepare(
-    "INSERT INTO users (username, role, name, salt, hash) VALUES (?, ?, ?, ?, ?)"
-  );
-  const insertBooking = db.prepare(
-    "INSERT INTO bookings (id, requester, department, tool, start, end, purpose, status, staffStatus) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
-  );
-  const insertNotification = db.prepare(
-    "INSERT INTO notifications (id, audience, title, message, time, read) VALUES (?, ?, ?, ?, ?, ?)"
-  );
-
-  const tx = db.transaction(() => {
+async function importFromJson(pool, raw) {
+  await withTransaction(pool, async (client) => {
     const users = Array.isArray(raw.users) && raw.users.length ? raw.users : null;
     if (users) {
-      for (const u of users) {
-        insertUser.run(u.username, u.role, u.name, u.salt, u.hash);
+      for (const user of users) {
+        await client.query(
+          "INSERT INTO users (username, role, name, email, department, active, salt, hash) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+          [
+            user.username,
+            user.role,
+            user.name,
+            user.email || null,
+            user.department || null,
+            user.active !== false,
+            user.salt,
+            user.hash
+          ]
+        );
       }
     } else {
-      for (const [username, password, role, name] of DEFAULT_USERS) {
+      for (const [username, password, role, name, email] of DEFAULT_USERS) {
         const { salt, hash } = hashPassword(password);
-        insertUser.run(username, role, name, salt, hash);
+        await client.query(
+          "INSERT INTO users (username, role, name, email, salt, hash) VALUES ($1, $2, $3, $4, $5, $6)",
+          [username, role, name, email, salt, hash]
+        );
       }
     }
-    const insertToolApprover = db.prepare("INSERT OR IGNORE INTO tool_approvers (tool, approver_username) VALUES (?, ?)");
-    for (const tool of DEFAULT_TOOLS) insertToolApprover.run(tool, "approver");
-    const bookings = Array.isArray(raw.bookings) ? raw.bookings : DEFAULT_BOOKINGS;
-    for (const b of bookings) {
-      insertBooking.run(b.id || crypto.randomUUID(), b.requester, b.department, b.tool, b.start, b.end, b.purpose, b.status || "pending", b.staffStatus || "waiting");
+
+    for (const tool of DEFAULT_TOOLS) {
+      await client.query(
+        "INSERT INTO tool_approvers (tool, approver_username) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        [tool, "approver"]
+      );
     }
+
+    const bookings = Array.isArray(raw.bookings) ? raw.bookings : DEFAULT_BOOKINGS;
+    for (const booking of bookings) {
+      await client.query(
+        'INSERT INTO bookings (id, requester, department, tool, start, "end", purpose, status, "staffStatus", created_by, rejection_reason) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+        [
+          booking.id || crypto.randomUUID(),
+          booking.requester,
+          booking.department,
+          booking.tool,
+          booking.start,
+          booking.end,
+          booking.purpose,
+          booking.status || "pending",
+          booking.staffStatus || "waiting",
+          booking.created_by || null,
+          booking.rejection_reason || null
+        ]
+      );
+    }
+
     const notifications = Array.isArray(raw.notifications) ? raw.notifications : DEFAULT_NOTIFICATIONS;
-    for (const n of notifications) {
-      insertNotification.run(n.id || crypto.randomUUID(), n.audience, n.title, n.message, n.time, n.read ? 1 : 0);
+    for (const notification of notifications) {
+      await client.query(
+        "INSERT INTO notifications (id, audience, recipient_user, title, message, time, read, category, related_type, related_id, severity) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+        [
+          notification.id || crypto.randomUUID(),
+          notification.audience || null,
+          notification.recipient_user || null,
+          notification.title,
+          notification.message,
+          notification.time,
+          notification.read === true,
+          notification.category || null,
+          notification.related_type || null,
+          notification.related_id || null,
+          notification.severity || "info"
+        ]
+      );
     }
   });
-  tx();
 }
 
 function publicUser(row) {
@@ -304,237 +327,232 @@ function publicUser(row) {
     name: row.name,
     email: row.email || null,
     department: row.department || null,
-    active: row.active === 0 ? false : true
+    active: row.active !== false
   };
 }
 
-function makeRepo(db) {
-  const q = {
-    findUser: db.prepare("SELECT * FROM users WHERE username = ?"),
-    findUserByEmail: db.prepare("SELECT * FROM users WHERE email = ? AND email IS NOT NULL"),
-    listUsers: db.prepare("SELECT username, role, name, email, department, active FROM users ORDER BY username"),
-    listUsersByRole: db.prepare("SELECT username, role, name, email, department, active FROM users WHERE role = ? ORDER BY username"),
-    insertUser: db.prepare("INSERT INTO users (username, role, name, email, department, salt, hash) VALUES (?, ?, ?, ?, ?, ?, ?)"),
-    updatePassword: db.prepare("UPDATE users SET salt = ?, hash = ? WHERE username = ?"),
-    updateUserProfile: db.prepare("UPDATE users SET name = COALESCE(?, name), email = COALESCE(?, email), department = COALESCE(?, department), active = COALESCE(?, active) WHERE username = ?"),
-
-    listToolApprovers: db.prepare(`
-      SELECT ta.tool, ta.approver_username, u.name, u.email
-      FROM tool_approvers ta JOIN users u ON u.username = ta.approver_username
-      ORDER BY ta.tool, u.name
-    `),
-    approversForTool: db.prepare(`
-      SELECT u.username, u.name, u.email
-      FROM tool_approvers ta JOIN users u ON u.username = ta.approver_username
-      WHERE ta.tool = ? AND u.active = 1
-    `),
-    addToolApprover: db.prepare("INSERT OR IGNORE INTO tool_approvers (tool, approver_username) VALUES (?, ?)"),
-    removeToolApprover: db.prepare("DELETE FROM tool_approvers WHERE tool = ? AND approver_username = ?"),
-
-    insertToken: db.prepare(`
-      INSERT INTO approval_tokens (id, booking_id, approver_username, token_hash, action, expires_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `),
-    findTokenByHash: db.prepare(`
-      SELECT id, booking_id, approver_username, action, expires_at, used_at, used_by
-      FROM approval_tokens WHERE token_hash = ?
-    `),
-    markTokenUsed: db.prepare("UPDATE approval_tokens SET used_at = ?, used_by = ? WHERE id = ? AND used_at IS NULL"),
-    invalidateTokensForBooking: db.prepare("UPDATE approval_tokens SET used_at = strftime('%s','now'), used_by = 'system:invalidated' WHERE booking_id = ? AND used_at IS NULL"),
-
-    updateBookingReject: db.prepare("UPDATE bookings SET status = 'rejected', rejection_reason = ? WHERE id = ?"),
-
-    listBookings: db.prepare("SELECT id, requester, department, tool, start, end, purpose, status, staffStatus, created_by, rejection_reason FROM bookings ORDER BY start"),
-    findBooking: db.prepare("SELECT id, requester, department, tool, start, end, purpose, status, staffStatus, created_by, rejection_reason FROM bookings WHERE id = ?"),
-    insertBooking: db.prepare("INSERT INTO bookings (id, requester, department, tool, start, end, purpose, status, staffStatus, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
-    updateBookingStatus: db.prepare("UPDATE bookings SET status = ? WHERE id = ?"),
-    updateBookingStaff: db.prepare("UPDATE bookings SET staffStatus = ? WHERE id = ?"),
-    nonRejectedNotReady: db.prepare("SELECT id, requester, tool FROM bookings WHERE status != 'rejected' AND staffStatus != 'ready'"),
-    conflictRow: db.prepare(`
-      SELECT id, requester, department, tool, start, end, purpose, status, staffStatus
-      FROM bookings
-      WHERE tool = ? AND status != 'rejected' AND id != ?
-        AND start < ? AND end > ?
-      LIMIT 1
-    `),
-
-    listNotifications: db.prepare(`
-      SELECT n.id, n.audience, n.recipient_user, n.title, n.message, n.time,
-             n.category, n.related_type, n.related_id, n.severity, n.created_at,
-             CASE WHEN nr.username IS NOT NULL THEN 1 ELSE n.read END AS read
-      FROM notifications n
-      LEFT JOIN notification_reads nr ON nr.notification_id = n.id AND nr.username = @username
-      WHERE n.recipient_user = @username
-         OR (n.recipient_user IS NULL AND (n.audience = @role OR n.audience IS NULL))
-      ORDER BY n.created_at DESC
-      LIMIT 200
-    `),
-    findNotification: db.prepare("SELECT id, audience, recipient_user FROM notifications WHERE id = ?"),
-    insertNotification: db.prepare(`
-      INSERT INTO notifications (id, audience, recipient_user, title, message, time, category, related_type, related_id, severity)
-      VALUES (@id, @audience, @recipient_user, @title, @message, @time, @category, @related_type, @related_id, @severity)
-    `),
-    clearNotifications: db.prepare("DELETE FROM notifications"),
-    markRead: db.prepare("INSERT OR IGNORE INTO notification_reads (notification_id, username) VALUES (?, ?)"),
-    markAllRead: db.prepare(`
-      INSERT OR IGNORE INTO notification_reads (notification_id, username)
-      SELECT n.id, @username FROM notifications n
-      WHERE n.recipient_user = @username
-         OR (n.recipient_user IS NULL AND (n.audience = @role OR n.audience IS NULL))
-    `),
-    unreadCount: db.prepare(`
-      SELECT COUNT(*) AS n FROM notifications n
-      LEFT JOIN notification_reads nr ON nr.notification_id = n.id AND nr.username = @username
-      WHERE nr.username IS NULL
-        AND (n.recipient_user = @username
-             OR (n.recipient_user IS NULL AND (n.audience = @role OR n.audience IS NULL)))
-    `),
-    countLoginFailures: db.prepare(`
-      SELECT COUNT(*) AS n FROM audit_log
-      WHERE action = 'login.failed' AND ip = ? AND ts > ?
-    `),
-
-    insertAudit: db.prepare("INSERT INTO audit_log (ts, actor, role, ip, action, target_type, target_id, details) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"),
-    listAudit: db.prepare("SELECT ts, actor, role, ip, action, target_type, target_id, details FROM audit_log ORDER BY ts DESC LIMIT ?")
-  };
-
+function makeRepo(pool) {
   return {
-    raw: db,
+    raw: pool,
 
-    findUser(username) {
-      return q.findUser.get(username);
+    async findUser(username) {
+      const { rows } = await pool.query("SELECT * FROM users WHERE username = $1", [username]);
+      return rows[0] || null;
     },
-    findUserByEmail(email) {
-      return q.findUserByEmail.get(email);
+    async findUserByEmail(email) {
+      const { rows } = await pool.query("SELECT * FROM users WHERE email = $1 AND email IS NOT NULL", [email]);
+      return rows[0] || null;
     },
-    listUsers() {
-      return q.listUsers.all().map(publicUser);
+    async listUsers() {
+      const { rows } = await pool.query("SELECT username, role, name, email, department, active FROM users ORDER BY username");
+      return rows.map(publicUser);
     },
-    listUsersByRole(role) {
-      return q.listUsersByRole.all(role).map(publicUser);
+    async listUsersByRole(role) {
+      const { rows } = await pool.query("SELECT username, role, name, email, department, active FROM users WHERE role = $1 ORDER BY username", [role]);
+      return rows.map(publicUser);
     },
-    createUser({ username, password, role, name, email, department }) {
+    async createUser({ username, password, role, name, email, department }) {
       const { salt, hash } = hashPassword(password);
-      q.insertUser.run(username, role, name, email || null, department || null, salt, hash);
-    },
-    updateUserProfile(username, { name, email, department, active }) {
-      q.updateUserProfile.run(
-        name ?? null,
-        email ?? null,
-        department ?? null,
-        active === undefined ? null : (active ? 1 : 0),
-        username
+      await pool.query(
+        "INSERT INTO users (username, role, name, email, department, salt, hash) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        [username, role, name, email || null, department || null, salt, hash]
       );
     },
-    setPassword(username, password) {
-      const { salt, hash } = hashPassword(password);
-      q.updatePassword.run(salt, hash, username);
-    },
-
-    listToolApprovers() {
-      return q.listToolApprovers.all();
-    },
-    approversForTool(tool) {
-      return q.approversForTool.all(tool);
-    },
-    addToolApprover(tool, username) {
-      q.addToolApprover.run(tool, username);
-    },
-    removeToolApprover(tool, username) {
-      q.removeToolApprover.run(tool, username);
-    },
-
-    insertApprovalToken(token) {
-      q.insertToken.run(token.id, token.booking_id, token.approver_username, token.token_hash, token.action, token.expires_at);
-    },
-    findApprovalTokenByHash(hash) {
-      return q.findTokenByHash.get(hash);
-    },
-    markApprovalTokenUsed(id, usedBy) {
-      const info = q.markTokenUsed.run(Math.floor(Date.now() / 1000), usedBy, id);
-      return info.changes > 0;
-    },
-    invalidateTokensForBooking(bookingId) {
-      q.invalidateTokensForBooking.run(bookingId);
-    },
-    rejectBooking(id, reason) {
-      q.updateBookingReject.run(reason || null, id);
-    },
-
-    listBookings() {
-      return q.listBookings.all().map((b) => ({ ...b }));
-    },
-    findBooking(id) {
-      const row = q.findBooking.get(id);
-      return row ? { ...row } : null;
-    },
-    insertBooking(b) {
-      q.insertBooking.run(b.id, b.requester, b.department, b.tool, b.start, b.end, b.purpose, b.status, b.staffStatus, b.created_by || null);
-    },
-    updateBookingStatus(id, status) {
-      q.updateBookingStatus.run(status, id);
-    },
-    updateBookingStaff(id, staffStatus) {
-      q.updateBookingStaff.run(staffStatus, id);
-    },
-    nonReadyBookings() {
-      return q.nonRejectedNotReady.all();
-    },
-    findConflict(booking, ignoreId = "") {
-      const row = q.conflictRow.get(booking.tool, ignoreId, booking.end, booking.start);
-      return row || null;
-    },
-
-    listNotifications({ username, role }) {
-      return q.listNotifications.all({ username, role }).map((n) => ({ ...n, read: !!n.read }));
-    },
-    addNotification(n) {
-      q.insertNotification.run({
-        id: n.id,
-        audience: n.audience || null,
-        recipient_user: n.recipient_user || null,
-        title: n.title,
-        message: n.message,
-        time: n.time,
-        category: n.category || null,
-        related_type: n.related_type || null,
-        related_id: n.related_id || null,
-        severity: n.severity || "info"
-      });
-    },
-    findNotificationMeta(id) {
-      return q.findNotification.get(id);
-    },
-    clearNotifications() {
-      q.clearNotifications.run();
-    },
-    markRead(notificationId, username) {
-      q.markRead.run(notificationId, username);
-    },
-    markAllRead({ username, role }) {
-      q.markAllRead.run({ username, role });
-    },
-    unreadCount({ username, role }) {
-      return q.unreadCount.get({ username, role }).n;
-    },
-    recentLoginFailures(ip, sinceMs) {
-      return q.countLoginFailures.get(ip, Math.floor(sinceMs / 1000)).n;
-    },
-
-    audit(entry) {
-      q.insertAudit.run(
-        entry.ts || Date.now(),
-        entry.actor || null,
-        entry.role || null,
-        entry.ip || null,
-        entry.action,
-        entry.target_type || null,
-        entry.target_id || null,
-        entry.details ? JSON.stringify(entry.details) : null
+    async updateUserProfile(username, { name, email, department, active }) {
+      await pool.query(
+        "UPDATE users SET name = COALESCE($1, name), email = COALESCE($2, email), department = COALESCE($3, department), active = COALESCE($4, active) WHERE username = $5",
+        [name ?? null, email ?? null, department ?? null, active === undefined ? null : !!active, username]
       );
     },
-    listAudit(limit = 200) {
-      return q.listAudit.all(limit).map((row) => ({
+    async setPassword(username, password) {
+      const { salt, hash } = hashPassword(password);
+      await pool.query("UPDATE users SET salt = $1, hash = $2 WHERE username = $3", [salt, hash, username]);
+    },
+
+    async listToolApprovers() {
+      const { rows } = await pool.query(`
+        SELECT ta.tool, ta.approver_username, u.name, u.email
+        FROM tool_approvers ta JOIN users u ON u.username = ta.approver_username
+        ORDER BY ta.tool, u.name
+      `);
+      return rows;
+    },
+    async approversForTool(tool) {
+      const { rows } = await pool.query(`
+        SELECT u.username, u.name, u.email
+        FROM tool_approvers ta JOIN users u ON u.username = ta.approver_username
+        WHERE ta.tool = $1 AND u.active = TRUE
+      `, [tool]);
+      return rows;
+    },
+    async addToolApprover(tool, username) {
+      await pool.query(
+        "INSERT INTO tool_approvers (tool, approver_username) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        [tool, username]
+      );
+    },
+    async removeToolApprover(tool, username) {
+      await pool.query("DELETE FROM tool_approvers WHERE tool = $1 AND approver_username = $2", [tool, username]);
+    },
+
+    async insertApprovalToken(token) {
+      await pool.query(
+        "INSERT INTO approval_tokens (id, booking_id, approver_username, token_hash, action, expires_at) VALUES ($1, $2, $3, $4, $5, $6)",
+        [token.id, token.booking_id, token.approver_username, token.token_hash, token.action, token.expires_at]
+      );
+    },
+    async findApprovalTokenByHash(hash) {
+      const { rows } = await pool.query(
+        "SELECT id, booking_id, approver_username, action, expires_at, used_at, used_by FROM approval_tokens WHERE token_hash = $1",
+        [hash]
+      );
+      return rows[0] || null;
+    },
+    async markApprovalTokenUsed(id, usedBy) {
+      const result = await pool.query(
+        "UPDATE approval_tokens SET used_at = $1, used_by = $2 WHERE id = $3 AND used_at IS NULL",
+        [Math.floor(Date.now() / 1000), usedBy, id]
+      );
+      return result.rowCount > 0;
+    },
+    async invalidateTokensForBooking(bookingId) {
+      await pool.query(
+        "UPDATE approval_tokens SET used_at = EXTRACT(EPOCH FROM NOW())::BIGINT, used_by = 'system:invalidated' WHERE booking_id = $1 AND used_at IS NULL",
+        [bookingId]
+      );
+    },
+    async rejectBooking(id, reason) {
+      await pool.query("UPDATE bookings SET status = 'rejected', rejection_reason = $1 WHERE id = $2", [reason || null, id]);
+    },
+
+    async listBookings() {
+      const { rows } = await pool.query('SELECT id, requester, department, tool, start, "end", purpose, status, "staffStatus", created_by, rejection_reason FROM bookings ORDER BY start');
+      return rows.map(normalizeBooking);
+    },
+    async findBooking(id) {
+      const { rows } = await pool.query('SELECT id, requester, department, tool, start, "end", purpose, status, "staffStatus", created_by, rejection_reason FROM bookings WHERE id = $1', [id]);
+      return rows[0] ? normalizeBooking(rows[0]) : null;
+    },
+    async insertBooking(booking) {
+      await pool.query(
+        'INSERT INTO bookings (id, requester, department, tool, start, "end", purpose, status, "staffStatus", created_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+        [booking.id, booking.requester, booking.department, booking.tool, booking.start, booking.end, booking.purpose, booking.status, booking.staffStatus, booking.created_by || null]
+      );
+    },
+    async updateBookingStatus(id, status) {
+      await pool.query("UPDATE bookings SET status = $1 WHERE id = $2", [status, id]);
+    },
+    async updateBookingStaff(id, staffStatus) {
+      await pool.query('UPDATE bookings SET "staffStatus" = $1 WHERE id = $2', [staffStatus, id]);
+    },
+    async nonReadyBookings() {
+      const { rows } = await pool.query('SELECT id, requester, tool FROM bookings WHERE status != $1 AND "staffStatus" != $2', ["rejected", "ready"]);
+      return rows;
+    },
+    async findConflict(booking, ignoreId = "") {
+      const { rows } = await pool.query(`
+        SELECT id, requester, department, tool, start, "end", purpose, status, "staffStatus", created_by, rejection_reason
+        FROM bookings
+        WHERE tool = $1 AND status != 'rejected' AND id != $2
+          AND start < $3 AND "end" > $4
+        LIMIT 1
+      `, [booking.tool, ignoreId, booking.end, booking.start]);
+      return rows[0] ? normalizeBooking(rows[0]) : null;
+    },
+
+    async listNotifications({ username, role }) {
+      const { rows } = await pool.query(`
+        SELECT n.id, n.audience, n.recipient_user, n.title, n.message, n.time,
+               n.category, n.related_type, n.related_id, n.severity, n.created_at,
+               CASE WHEN nr.username IS NOT NULL THEN TRUE ELSE n.read END AS read
+        FROM notifications n
+        LEFT JOIN notification_reads nr ON nr.notification_id = n.id AND nr.username = $1
+        WHERE n.recipient_user = $1
+           OR (n.recipient_user IS NULL AND (n.audience = $2 OR n.audience IS NULL))
+        ORDER BY n.created_at DESC
+        LIMIT 200
+      `, [username, role]);
+      return rows.map((row) => ({ ...row, read: row.read === true }));
+    },
+    async findNotificationMeta(id) {
+      const { rows } = await pool.query("SELECT id, audience, recipient_user FROM notifications WHERE id = $1", [id]);
+      return rows[0] || null;
+    },
+    async addNotification(notification) {
+      await pool.query(
+        "INSERT INTO notifications (id, audience, recipient_user, title, message, time, category, related_type, related_id, severity) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+        [
+          notification.id,
+          notification.audience || null,
+          notification.recipient_user || null,
+          notification.title,
+          notification.message,
+          notification.time,
+          notification.category || null,
+          notification.related_type || null,
+          notification.related_id || null,
+          notification.severity || "info"
+        ]
+      );
+    },
+    async clearNotifications() {
+      await pool.query("DELETE FROM notifications");
+    },
+    async markRead(notificationId, username) {
+      await pool.query(
+        "INSERT INTO notification_reads (notification_id, username) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+        [notificationId, username]
+      );
+    },
+    async markAllRead({ username, role }) {
+      await pool.query(`
+        INSERT INTO notification_reads (notification_id, username)
+        SELECT n.id, $1 FROM notifications n
+        WHERE n.recipient_user = $1
+           OR (n.recipient_user IS NULL AND (n.audience = $2 OR n.audience IS NULL))
+        ON CONFLICT DO NOTHING
+      `, [username, role]);
+    },
+    async unreadCount({ username, role }) {
+      const { rows } = await pool.query(`
+        SELECT COUNT(*)::int AS n
+        FROM notifications n
+        LEFT JOIN notification_reads nr ON nr.notification_id = n.id AND nr.username = $1
+        WHERE nr.username IS NULL
+          AND (n.recipient_user = $1
+               OR (n.recipient_user IS NULL AND (n.audience = $2 OR n.audience IS NULL)))
+      `, [username, role]);
+      return rows[0]?.n || 0;
+    },
+    async recentLoginFailures(ip, sinceMs) {
+      const { rows } = await pool.query(
+        "SELECT COUNT(*)::int AS n FROM audit_log WHERE action = 'login.failed' AND ip = $1 AND ts > $2",
+        [ip, sinceMs]
+      );
+      return rows[0]?.n || 0;
+    },
+
+    async audit(entry) {
+      await pool.query(
+        "INSERT INTO audit_log (ts, actor, role, ip, action, target_type, target_id, details) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+        [
+          entry.ts || Date.now(),
+          entry.actor || null,
+          entry.role || null,
+          entry.ip || null,
+          entry.action,
+          entry.target_type || null,
+          entry.target_id || null,
+          entry.details ? JSON.stringify(entry.details) : null
+        ]
+      );
+    },
+    async listAudit(limit = 200) {
+      const { rows } = await pool.query(
+        "SELECT ts, actor, role, ip, action, target_type, target_id, details FROM audit_log ORDER BY ts DESC LIMIT $1",
+        [limit]
+      );
+      return rows.map((row) => ({
         ...row,
         details: row.details ? JSON.parse(row.details) : null
       }));
@@ -544,14 +562,22 @@ function makeRepo(db) {
   };
 }
 
-function initRepo({ dbPath, jsonPath }) {
-  const db = openDb(dbPath);
-  const status = seedIfEmpty(db, jsonPath);
-  return { repo: makeRepo(db), status };
+function normalizeBooking(row) {
+  return {
+    ...row,
+    end: row.end,
+    staffStatus: row.staffStatus
+  };
+}
+
+async function initRepo({ jsonPath }) {
+  const pool = createPool();
+  await runSchema(pool);
+  const status = await seedIfEmpty(pool, jsonPath);
+  return { repo: makeRepo(pool), status };
 }
 
 module.exports = {
-  openDb,
   seedIfEmpty,
   makeRepo,
   initRepo,

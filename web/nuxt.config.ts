@@ -14,7 +14,8 @@ export default defineNuxtConfig({
   ssr: true,
 
   runtimeConfig: {
-    legacyApiBase: import.meta.env.LEGACY_API_BASE || 'http://localhost:8775',
+    // Overridden at runtime by NUXT_LEGACY_API_BASE (Nuxt env-var auto-mapping).
+    legacyApiBase: 'http://localhost:8775',
     public: {
       appName: 'LabReserve'
     }
